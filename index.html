@@ -449,7 +449,20 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-init();
-</script>
+async function ensureFont() {
+  if (!document.fonts) return;
+  try {
+    await Promise.all([
+      document.fonts.load("900 100px 'Unbounded'"),
+      document.fonts.load("900 40px 'Unbounded'"),
+      document.fonts.load("900 200px 'Unbounded'"),
+    ]);
+    await document.fonts.ready;
+  } catch (e) {
+    console.warn('Font load failed', e);
+  }
+}
+
+ensureFont().then(init);</script>
 </body>
 </html>
