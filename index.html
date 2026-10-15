@@ -111,8 +111,7 @@ function makeCanvasTexture(layer) {
 
   let fontSize = Math.min(imageWidth * 0.14, imageHeight * 0.24);
   const maxWidth = imageWidth * 0.9;
-  const font = '700 ' + fontSize + "px 'Helvetica Neue', Helvetica, Arial, sans-serif";
-  ctx.font = font;
+const font = '900 ' + fontSize + "px 'Unbounded', sans-serif";  ctx.font = font;
 
   const words = layer.text.split(' ');
   const lines = [];
