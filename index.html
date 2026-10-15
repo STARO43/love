@@ -96,7 +96,40 @@ function init() {
 
   animate();
 }
+function fitFontSize(ctx, layer, baseSize) {
+  const maxWidth = imageWidth * 0.85;
+  let size = baseSize;
+  while (size > 10) {
+    const font = '900 ' + size + "px 'Unbounded', sans-serif";
+    ctx.font = font;
 
+    const words = layer.text.split(' ');
+    const lines = [];
+    let line = '';
+    let tooWide = false;
+
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      if (ctx.measureText(w).width > maxWidth) { tooWide = true; break; }
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > maxWidth && line) {
+        lines.push(line); line = w;
+      } else line = test;
+    }
+    if (line) lines.push(line);
+
+    if (!tooWide) {
+      let ok = true;
+      for (let i = 0; i < lines.length; i++) {
+        if (ctx.measureText(lines[i]).width > maxWidth) { ok = false; break; }
+      }
+      if (ok) return { size: size, lines: lines, font: font };
+    }
+    size -= 2;
+  }
+  return { size: size, lines: [layer.text], font: '900 ' + size + "px 'Unbounded', sans-serif" };
+}
+  
 function makeCanvasTexture(layer) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const c = document.createElement('canvas');
@@ -109,30 +142,19 @@ function makeCanvasTexture(layer) {
   ctx.fillStyle = hex;
   ctx.fillRect(0, 0, imageWidth, imageHeight);
 
-  let fontSize = Math.min(imageWidth * 0.14, imageHeight * 0.24);
-  const maxWidth = imageWidth * 0.9;
-const font = '900 ' + fontSize + "px 'Unbounded', sans-serif";  ctx.font = font;
-
-  const words = layer.text.split(' ');
-  const lines = [];
-  let line = '';
-  for (let i = 0; i < words.length; i++) {
-    const w = words[i];
-    const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line); line = w;
-    } else line = test;
-  }
-  if (line) lines.push(line);
+  const baseSize = Math.min(imageWidth * 0.12, imageHeight * 0.2);
+  const fit = fitFontSize(ctx, layer, baseSize);
 
   ctx.fillStyle = layer.color;
-  ctx.font = font;
+  ctx.font = fit.font;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const lh = fontSize * 1.15;
-  const startY = imageHeight / 2 - (lines.length - 1) * lh / 2;
-  for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], imageWidth / 2, startY + i * lh);
+  const lh = fit.size * 1.2;
+  const startY = imageHeight / 2 - (fit.lines.length - 1) * lh / 2;
+  for (let i = 0; i < fit.lines.length; i++) {
+    ctx.fillText(fit.lines[i], imageWidth / 2, startY + i * lh);
+  }
 
   const tex = new THREE.CanvasTexture(c);
   tex.minFilter = THREE.LinearFilter;
