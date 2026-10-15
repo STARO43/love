@@ -3,417 +3,376 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>16/09/2026</title>
+<title>160926</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  html {
-    background: #ffffff;
-  }
-
   html, body {
-    width: 100%;
-    height: 100%;
+    margin: 0; padding: 0;
+    width: 100%; height: 100%;
     overflow: hidden;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background: #000;
+    cursor: pointer;
+    touch-action: none;
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: none;
   }
-
-  #bg {
-    position: fixed;
-    top: -2px; left: -2px; right: -2px; bottom: -2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 0;
-  }
-
-  #bg span {
-    font-weight: 700;
-    text-align: center;
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-    padding: 0 5vw;
-    word-wrap: break-word;
-  }
-
-  #shards {
-    position: fixed;
-    top: -2px; left: -2px; right: -2px; bottom: -2px;
-    z-index: 10;
-    pointer-events: none;
-    overflow: hidden;
-  }
-
-  #shards.desktop {
-    perspective: 1400px;
-    transform-style: preserve-3d;
-  }
-
-  .shard {
-    position: absolute;
-    top: 0; left: 0;
-    pointer-events: none;
-    transform-origin: center center;
-  }
-
-  .shard.anim {
-    will-change: transform, opacity;
-  }
+  canvas { display: block; }
 </style>
 </head>
-
 <body>
-
-<div id="bg" aria-hidden="true"></div>
-<div id="shards" aria-hidden="true"></div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
 <script>
 const layers = [
-  { bg: '#ffffff', text: 'Тебе тридцать пять,',       color: '#000000' },
-  { bg: '#000000', text: 'или сколько там лет?',      color: '#ffffff' },
-  { bg: '#e31e24', text: 'Ну вот.',                   color: '#ffffff' },
-  { bg: '#ffffff', text: 'Интересно,',                color: '#000000' },
-  { bg: '#000000', text: 'счастлива? Нет?',           color: '#ffffff' },
-  { bg: '#f2f2f2', text: 'Да ну.',                    color: '#e31e24' },
-  { bg: '#000000', text: 'Может важно вовсе не то?',  color: '#ffffff' },
-  { bg: '#ffffff', text: 'Родилась же когда-то.',     color: '#000000' },
-  { bg: '#e31e24', text: 'А теперь — наше всё! ♡',    color: '#ffffff' },
+  { bg: 0xffffff, text: 'Тебе тридцать пять,',      color: '#000000' },
+  { bg: 0x000000, text: 'или сколько там лет?',     color: '#ffffff' },
+  { bg: 0xe31e24, text: 'Ну вот.',                  color: '#ffffff' },
+  { bg: 0xffffff, text: 'Интересно,',               color: '#000000' },
+  { bg: 0x000000, text: 'счастлива? Нет?',          color: '#ffffff' },
+  { bg: 0xf2f2f2, text: 'Да ну.',                   color: '#e31e24' },
+  { bg: 0x000000, text: 'Может важно вовсе не то?', color: '#ffffff' },
+  { bg: 0xffffff, text: 'Родилась же когда-то.',    color: '#000000' },
+  { bg: 0xe31e24, text: 'А теперь — наше всё! ♡',   color: '#ffffff' },
 ];
 
-const isMobile = /Android|iPhone|iPad|iPod|Mobile|Opera Mini/i.test(navigator.userAgent)
-              || window.innerWidth < 700
-              || ('ontouchstart' in window && window.innerWidth < 1024);
+const TWO_PI = 2 * Math.PI;
 
-const ENABLE_3D   = !isMobile;
-const MAX_DPR     = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 1.75);
+let imageWidth  = window.innerWidth;
+let imageHeight = window.innerHeight;
+let cameraStart = 3.5 * imageHeight;
 
-const SHARD_COUNT  = isMobile ? 22 : 34;
-const POINT_SPREAD = isMobile ? 0.85 : 0.6;
+let scene, camera, renderer, group;
+let layerIndex = 0;
+let clicks = 0;
+let cursor = 0;
+let clickPosition = [imageWidth / 2, imageHeight / 2];
+let vertices = [];
+let indices = [];
+let activeShards = [];
+let busy = false;
+let lastClick = 0;
 
-const GRAVITY        = isMobile ? 1 : 1;
-const GRAVITY_DELAY  = isMobile ? 110  : 160;
-const IMPULSE        = isMobile ? 1.6  : 1.9;
-const IMPULSE_RAND   = isMobile ? 2.2  : 2.6;
-const FRICTION       = 0.986;
-const Z_FRICTION     = 0.965;
-const ROT_SPEED      = isMobile ? 0.06 : 0.11;
-const ROT_DAMPING    = 0.988;
-const FADE_SPEED     = isMobile ? 0.016 : 0.009;
-const SCALE_FADE     = true;
+function randomRange(a, b) { return a + (b - a) * Math.random(); }
+function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+function easeCubicIn(t)  { return t * t * t; }
+function easeCubicOut(t) { return 1 - Math.pow(1 - t, 3); }
 
-const LOCK_MS        = isMobile ? 450 : 300;
-const MIN_GAP_MS     = isMobile ? 350 : 180;
-const MAX_SHARDS     = isMobile ? 130 : 240;
-
-let currentLayer   = 0;
-let busy           = false;
-let lastActionTime = 0;
-let lastTime       = 0;
-let running        = false;
-
-const bgEl     = document.getElementById('bg');
-const shardsEl = document.getElementById('shards');
-const shards   = [];
-
-if (ENABLE_3D) shardsEl.classList.add('desktop');
-
-let bgSpan = document.createElement('span');
-bgSpan.setAttribute('aria-hidden', 'true');
-bgEl.appendChild(bgSpan);
-
-function setBackground(index) {
-  const L = layers[index % layers.length];
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-
-  bgEl.style.background = L.bg;
-  document.body.style.background = L.bg;
-  document.documentElement.style.background = L.bg;
-
-  const fontSize = Math.min(W * 0.12, H * 0.22);
-  bgSpan.textContent = L.text;
-  bgSpan.style.fontSize = fontSize + 'px';
-  bgSpan.style.color = L.color;
+function getRandomWallDepth() {
+  return Math.floor(500 * Math.random()) + 100;
 }
 
-function renderLayerCanvas(index) {
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-  const L = layers[index % layers.length];
+function init() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
 
-  const canvas = document.createElement('canvas');
-  canvas.width  = Math.floor(W * MAX_DPR);
-  canvas.height = Math.floor(H * MAX_DPR);
-  const ctx = canvas.getContext('2d');
-  ctx.scale(MAX_DPR, MAX_DPR);
+  const fov = 2 * Math.atan(imageHeight / (2 * cameraStart)) * (180 / Math.PI);
+  camera = new THREE.PerspectiveCamera(fov, imageWidth / imageHeight, 1, 20000);
+  camera.position.set(0, 0, cameraStart);
+  scene.add(camera);
 
-  ctx.fillStyle = L.bg;
-  ctx.fillRect(0, 0, W, H);
+  const light = new THREE.PointLight(0xffffff, 1);
+  camera.add(light);
 
-  const fontSize = Math.min(W * 0.12, H * 0.22);
-  ctx.fillStyle = L.color;
-  ctx.font = `700 ${fontSize}px 'Helvetica Neue', Helvetica, Arial, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(L.text, W / 2, H / 2);
+  group = new THREE.Group();
+  group.position.set(-0.5 * imageWidth, -0.5 * imageHeight, 0);
+  scene.add(group);
 
-  return { canvas };
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(imageWidth, imageHeight);
+  document.body.appendChild(renderer.domElement);
+
+  document.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('resize', onWindowResize, false);
+
+  makeBox();
+  makeBox();
+
+  animate();
 }
 
-function triangulate(cx, cy, W, H) {
-  const points = [];
-  const maxR = Math.max(W, H) * 0.7;
-
-  for (let i = 0; i < SHARD_COUNT; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.pow(Math.random(), 1 + POINT_SPREAD) * maxR;
-    let x = cx + Math.cos(angle) * r;
-    let y = cy + Math.sin(angle) * r;
-    x = Math.max(-100, Math.min(W + 100, x));
-    y = Math.max(-100, Math.min(H + 100, y));
-    points.push(x, y);
-  }
-
-  points.push(-100, -100, W + 100, -100, -100, H + 100, W + 100, H + 100);
-  points.push(cx, cy);
-
-  const d = new Delaunator(new Float64Array(points));
-  return { points, triangles: d.triangles };
-}
-
-function cutShard(sourceCanvas, p0, p1, p2) {
-  const minX = Math.min(p0.x, p1.x, p2.x);
-  const minY = Math.min(p0.y, p1.y, p2.y);
-  const maxX = Math.max(p0.x, p1.x, p2.x);
-  const maxY = Math.max(p0.y, p1.y, p2.y);
-  const w = Math.ceil(maxX - minX);
-  const h = Math.ceil(maxY - minY);
-
-  if (w < 6 || h < 6) return null;
-
-  const dpr = MAX_DPR;
+function makeCanvasTexture(layer) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const c = document.createElement('canvas');
-  c.width  = Math.ceil(w * dpr);
-  c.height = Math.ceil(h * dpr);
-
+  c.width  = Math.round(imageWidth  * dpr);
+  c.height = Math.round(imageHeight * dpr);
   const ctx = c.getContext('2d');
   ctx.scale(dpr, dpr);
 
-  const lx0 = p0.x - minX, ly0 = p0.y - minY;
-  const lx1 = p1.x - minX, ly1 = p1.y - minY;
-  const lx2 = p2.x - minX, ly2 = p2.y - minY;
+  const hex = '#' + layer.bg.toString(16).padStart(6, '0');
+  ctx.fillStyle = hex;
+  ctx.fillRect(0, 0, imageWidth, imageHeight);
 
-  ctx.beginPath();
-  ctx.moveTo(lx0, ly0);
-  ctx.lineTo(lx1, ly1);
-  ctx.lineTo(lx2, ly2);
-  ctx.closePath();
-  ctx.clip();
+  let fontSize = Math.min(imageWidth * 0.14, imageHeight * 0.24);
+  const maxWidth = imageWidth * 0.9;
+  const font = '700 ' + fontSize + "px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+  ctx.font = font;
 
-  ctx.drawImage(
-    sourceCanvas,
-    0, 0, sourceCanvas.width, sourceCanvas.height,
-    0, 0, window.innerWidth, window.innerHeight
-  );
+  const words = layer.text.split(' ');
+  const lines = [];
+  let line = '';
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line); line = w;
+    } else line = test;
+  }
+  if (line) lines.push(line);
 
-  return { canvas: c, minX, minY, w, h };
+  ctx.fillStyle = layer.color;
+  ctx.font = font;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const lh = fontSize * 1.15;
+  const startY = imageHeight / 2 - (lines.length - 1) * lh / 2;
+  for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], imageWidth / 2, startY + i * lh);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  return tex;
 }
 
-function createShards(cx, cy) {
-  if (shards.length > MAX_SHARDS) return;
+function makeBox() {
+  const depth = getRandomWallDepth();
+  const layer = layers[layerIndex % layers.length];
+  const tex = makeCanvasTexture(layer);
 
-  const { canvas } = renderLayerCanvas(currentLayer);
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-  const { points, triangles } = triangulate(cx, cy, W, H);
+  const geo = new THREE.BoxGeometry(imageWidth, imageHeight, depth);
+  const sideColor = new THREE.Color(layer.bg).multiplyScalar(0.82);
+  const sideMat = new THREE.MeshPhongMaterial({ color: sideColor });
+  const mats = [
+    sideMat,
+    sideMat,
+    sideMat,
+    sideMat,
+    new THREE.MeshBasicMaterial({ map: tex }),
+    sideMat,
+  ];
+  const box = new THREE.Mesh(geo, mats);
 
-  const maxDist = Math.hypot(W, H) * 0.5;
-  const rnd = (range) => (Math.random() - 0.5) * range;
+  cursor -= depth;
+  box.position.z = cursor;
+  box.name = 'box';
+  box.userData.depth = depth;
+  box.userData.layer = layerIndex % layers.length;
+  box.userData.texture = tex;
+  box.userData.sideMat = sideMat;
+  box.userData.isWall = true;
+  scene.add(box);
 
-  for (let i = 0; i < triangles.length; i += 3) {
-    const i0 = triangles[i] * 2;
-    const i1 = triangles[i + 1] * 2;
-    const i2 = triangles[i + 2] * 2;
+  layerIndex++;
 
-    const p0 = { x: points[i0],     y: points[i0 + 1] };
-    const p1 = { x: points[i1],     y: points[i1 + 1] };
-    const p2 = { x: points[i2],     y: points[i2 + 1] };
+  const walls = [];
+  scene.traverse(function (obj) {
+    if (obj.userData && obj.userData.isWall) walls.push(obj);
+  });
+  walls.sort(function (a, b) { return b.position.z - a.position.z; });
+  if (walls.length > 0) {
+    tweenCameraTo(cameraStart + walls[0].position.z, 0.35, easeCubicOut);
+  }
+}
 
-    const cut = cutShard(canvas, p0, p1, p2);
-    if (!cut) continue;
+function tweenCameraTo(targetZ, duration, ease) {
+  const startZ = camera.position.z;
+  const t0 = performance.now();
+  const ms = duration * 1000;
+  function step() {
+    const t = Math.min((performance.now() - t0) / ms, 1);
+    camera.position.z = startZ + (targetZ - startZ) * ease(t);
+    if (t < 1) requestAnimationFrame(step);
+  }
+  step();
+}
 
-    const mx = (p0.x + p1.x + p2.x) / 3;
-    const my = (p0.y + p1.y + p2.y) / 3;
+function onPointerDown(e) {
+  if (e.pointerType === 'touch' && e.isPrimary === false) return;
+  const now = performance.now();
+  if (busy || now - lastClick < 150) return;
+  busy = true;
+  lastClick = now;
+  setTimeout(function () { busy = false; }, 150);
 
-    const div = document.createElement('div');
-    div.className = 'shard anim';
-    div.style.width  = cut.w + 'px';
-    div.style.height = cut.h + 'px';
+  clickPosition[0] = e.clientX;
+  clickPosition[1] = imageHeight - e.clientY;
 
-    cut.canvas.style.display = 'block';
-    cut.canvas.style.width   = cut.w + 'px';
-    cut.canvas.style.height  = cut.h + 'px';
-    div.appendChild(cut.canvas);
-    div.style.transform = `translate(${cut.minX}px, ${cut.minY}px)`;
+  clicks++;
+  document.title = clicks.toLocaleString() + ' Walls Smashed';
 
-    shardsEl.appendChild(div);
+  triangulate();
+  shatter();
 
-    const dx = mx - cx;
-    const dy = my - cy;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const nx = dx / dist;
-    const ny = dy / dist;
+  makeBox();
+}
 
-    const distFactor = 1 - Math.min(dist / maxDist, 1);
-    const speed = IMPULSE + Math.random() * IMPULSE_RAND + distFactor * 0.6;
+function onWindowResize() {
+  imageWidth  = window.innerWidth;
+  imageHeight = window.innerHeight;
+  cameraStart = 3.5 * imageHeight;
+  camera.aspect = imageWidth / imageHeight;
+  camera.fov = 2 * Math.atan(imageHeight / (2 * cameraStart)) * (180 / Math.PI);
+  camera.updateProjectionMatrix();
+  group.position.x = -0.5 * imageWidth;
+  group.position.y = -0.5 * imageHeight;
+  renderer.setSize(imageWidth, imageHeight);
+}
 
-    const area = cut.w * cut.h;
-    const sizeK = Math.min(area / 4000, 2.5);
+function triangulate() {
+  vertices = [];
+  const rings = [
+    { r: imageWidth / 12, c: 12 },
+    { r: imageWidth / 8,  c: 12 },
+    { r: imageWidth / 4,  c: 12 },
+    { r: imageWidth,      c: 12 },
+  ];
+  const cx = clickPosition[0];
+  const cy = clickPosition[1];
+  vertices.push([cx, cy]);
 
-    shards.push({
-      el: div,
-      baseX: cut.minX,
-      baseY: cut.minY,
+  for (let ri = 0; ri < rings.length; ri++) {
+    const ring = rings[ri];
+    const spread = 0.25 * ring.r;
+    for (let h = 0; h < ring.c; h++) {
+      const x = Math.cos(h / ring.c * TWO_PI) * ring.r + cx + randomRange(-spread, spread);
+      const y = Math.sin(h / ring.c * TWO_PI) * ring.r + cy + randomRange(-spread, spread);
+      vertices.push([x, y]);
+    }
+  }
 
-      x: 0, y: 0, z: 0,
-      vx: nx * speed + rnd(1.2),
-      vy: ny * speed - (0.7 + Math.random() * 1.0) / (0.7 + sizeK * 0.4) + rnd(1.2),
-      vz: ENABLE_3D ? (10 + Math.random() * 55) : 0,
+  for (let i = 0; i < vertices.length; i++) {
+    vertices[i][0] = clamp(vertices[i][0], 0, imageWidth);
+    vertices[i][1] = clamp(vertices[i][1], 0, imageHeight);
+  }
 
-      rx: 0, ry: 0, rz: 0,
-      vrx: ENABLE_3D ? rnd(ROT_SPEED * 2) : 0,
-      vry: ENABLE_3D ? rnd(ROT_SPEED * 2) : 0,
-      vrz: rnd(ROT_SPEED * 1.2),
+  const flat = new Float64Array(vertices.length * 2);
+  for (let i = 0; i < vertices.length; i++) {
+    flat[i * 2]     = vertices[i][0];
+    flat[i * 2 + 1] = vertices[i][1];
+  }
+  const d = new Delaunator(flat);
+  indices = Array.prototype.slice.call(d.triangles);
+}
 
-      opacity: 1,
-      scale: 1,
-      age: 0,
+function shatter() {
+  let frontBox = null;
+  let frontZ = -Infinity;
+  scene.traverse(function (obj) {
+    if (obj.userData && obj.userData.isWall && obj.position.z > frontZ) {
+      frontZ = obj.position.z;
+      frontBox = obj;
+    }
+  });
+  if (!frontBox) return;
+
+  const depth = frontBox.userData.depth;
+  const tex = frontBox.userData.texture;
+
+  scene.remove(frontBox);
+  frontBox.geometry.dispose();
+  const oldMats = Array.isArray(frontBox.material) ? frontBox.material : [frontBox.material];
+  for (let i = 0; i < oldMats.length; i++) oldMats[i].dispose();
+
+  const sideColor = new THREE.Color(layers[frontBox.userData.layer].bg).multiplyScalar(0.82);
+  const batch = {
+    tex: tex,
+    frontMat: new THREE.MeshBasicMaterial({ map: tex }),
+    sideMat: new THREE.MeshPhongMaterial({ color: sideColor }),
+    count: 0,
+  };
+
+  const extrudeOpts = {
+    depth: depth,
+    bevelEnabled: false,
+    bevelSegments: 1,
+    steps: 1,
+    bevelSize: 0,
+    bevelThickness: 0,
+  };
+
+  const dur = 420;
+  const zBase = frontZ - depth / 2;
+
+  for (let o = 0; o < indices.length; o += 3) {
+    const A = vertices[indices[o]];
+    const B = vertices[indices[o + 1]];
+    const C = vertices[indices[o + 2]];
+
+    const shape = new THREE.Shape();
+    shape.moveTo(A[0], A[1]);
+    shape.lineTo(B[0], B[1]);
+    shape.lineTo(C[0], C[1]);
+    shape.closePath();
+
+    let geo;
+    try {
+      geo = new THREE.ExtrudeGeometry(shape, extrudeOpts);
+    } catch (err) { continue; }
+
+    const pos = geo.attributes.position;
+    const uvArr = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) {
+      uvArr[i * 2]     = pos.getX(i) / imageWidth;
+      uvArr[i * 2 + 1] = pos.getY(i) / imageHeight;
+    }
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvArr, 2));
+
+    const mesh = new THREE.Mesh(geo, [batch.frontMat, batch.sideMat]);
+    mesh.position.set(0, 0, zBase);
+    group.add(mesh);
+
+    const cx = (A[0] + B[0] + C[0]) / 3;
+    const cy = (A[1] + B[1] + C[1]) / 3;
+    const dx = cx - clickPosition[0];
+    const dy = cy - clickPosition[1];
+    const p = Math.sqrt(dx * dx + dy * dy);
+
+    const delay = 0.0012 * p * randomRange(0.9, 1.1);
+
+    batch.count++;
+    activeShards.push({
+      mesh: mesh,
+      startY: mesh.position.y,
+      t0: performance.now() + delay * 1000,
+      dur: dur,
+      batch: batch,
     });
   }
 
-  startLoop();
+  vertices = [];
+  indices = [];
 }
 
-function animate(t) {
-  const dtMs = Math.min(t - lastTime, 34);
-  const dt = dtMs / 16;
-  lastTime = t;
-
-  for (let i = shards.length - 1; i >= 0; i--) {
-    const s = shards[i];
-    s.age += dtMs;
-
-    if (s.age > GRAVITY_DELAY) s.vy += GRAVITY * dt;
-
-    s.x += s.vx * dt;
-    s.y += s.vy * dt;
-    s.z += s.vz * dt;
-
-    s.vx *= FRICTION;
-    s.vy *= FRICTION;
-    if (ENABLE_3D) s.vz *= Z_FRICTION;
-
-    if (ENABLE_3D) {
-      s.rx += s.vrx * dt;
-      s.ry += s.vry * dt;
-      s.vrx *= ROT_DAMPING;
-      s.vry *= ROT_DAMPING;
-    }
-    s.rz += s.vrz * dt;
-    s.vrz *= ROT_DAMPING;
-
-    s.opacity -= FADE_SPEED * dt;
-
-    if (SCALE_FADE) {
-      const o = s.opacity > 0 ? s.opacity : 0;
-      s.scale = 1 - (1 - o) * 0.08;
-    }
-
-    const tx = s.baseX + s.x;
-    const ty = s.baseY + s.y;
-
-    let transform;
-    if (ENABLE_3D) {
-      transform =
-        `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, ${s.z.toFixed(1)}px) ` +
-        `rotateX(${s.rx.toFixed(3)}rad) rotateY(${s.ry.toFixed(3)}rad) ` +
-        `rotateZ(${s.rz.toFixed(3)}rad) scale(${s.scale.toFixed(3)})`;
-    } else {
-      transform =
-        `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) ` +
-        `rotate(${s.rz.toFixed(3)}rad) scale(${s.scale.toFixed(3)})`;
-    }
-
-    s.el.style.transform = transform;
-    s.el.style.opacity = s.opacity < 1 ? s.opacity.toFixed(3) : 1;
-
-    if (s.opacity <= 0) {
-      s.el.classList.remove('anim');
-      s.el.remove();
-      shards.splice(i, 1);
-    }
-  }
-
-  if (shards.length > 0) {
-    requestAnimationFrame(animate);
-  } else {
-    running = false;
-  }
-}
-
-function startLoop() {
-  if (running) return;
-  running = true;
-  lastTime = performance.now();
-  requestAnimationFrame(animate);
-}
-
-function trigger(x, y) {
+function updateShards() {
   const now = performance.now();
-  if (busy) return;
-  if (now - lastActionTime < MIN_GAP_MS) return;
-
-  busy = true;
-  lastActionTime = now;
-  setTimeout(() => { busy = false; }, LOCK_MS);
-
-  createShards(x, y);
-
-  currentLayer = (currentLayer + 1) % layers.length;
-  setBackground(currentLayer);
+  for (let i = activeShards.length - 1; i >= 0; i--) {
+    const s = activeShards[i];
+    const t = (now - s.t0) / s.dur;
+    if (t < 0) continue;
+    const e = easeCubicIn(Math.min(t, 1));
+    s.mesh.position.y = s.startY - 3000 * e;
+    if (t >= 1) {
+      group.remove(s.mesh);
+      s.mesh.geometry.dispose();
+      activeShards.splice(i, 1);
+      s.batch.count--;
+      if (s.batch.count === 0) {
+        s.batch.tex.dispose();
+        s.batch.frontMat.dispose();
+        s.batch.sideMat.dispose();
+      }
+    }
+  }
 }
 
-document.addEventListener('pointerdown', (e) => {
-  if (e.pointerType === 'touch' && e.isPrimary === false) return;
-  trigger(e.clientX, e.clientY);
-}, { passive: true });
-
-if (!window.PointerEvent) {
-  document.addEventListener('touchstart', (e) => {
-    if (e.touches.length !== 1) return;
-    const t = e.touches[0];
-    trigger(t.clientX, t.clientY);
-  }, { passive: true });
-
-  document.addEventListener('mousedown', (e) => {
-    trigger(e.clientX, e.clientY);
-  });
+function animate() {
+  requestAnimationFrame(animate);
+  updateShards();
+  renderer.render(scene, camera);
 }
 
-document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-let resizeTimer = null;
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => setBackground(currentLayer), 150);
-});
-
-setBackground(0);
+init();
 </script>
 </body>
 </html>
