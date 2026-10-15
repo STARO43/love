@@ -69,8 +69,8 @@ function getRandomWallDepth() {
 
 function randomPastelColor() {
   const h = Math.random();
-  const s = 0.4 + Math.random() * 0.4;
-  const l = 0.5 + Math.random() * 0.3;
+  const s = 0.3 + Math.random() * 0.4;
+  const l = 0.1 + Math.random() * 0.2;
   return new THREE.Color().setHSL(h, s, l).getHex();
 }
 
