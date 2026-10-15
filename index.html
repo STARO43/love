@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<link rel="icon" href="favicon.ico" type="image/x-icon">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>16/09/2026</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: 100%; height: 100%;
-    overflow: hidden;
+
+  html {
     background: #ffffff;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
+    touch-action: none;
   }
 
   #bg {
     position: fixed;
-    inset: 0;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 0;
   }
+
   #bg span {
     font-weight: 700;
     text-align: center;
@@ -37,88 +42,112 @@
 
   #shards {
     position: fixed;
-    inset: 0;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
     z-index: 10;
     pointer-events: none;
     overflow: hidden;
   }
 
-  .shard {
-    position: absolute;
-    top: 0;
-    left: 0;
-    will-change: transform, opacity;
-    pointer-events: none;
+  #shards.desktop {
+    perspective: 1400px;
+    transform-style: preserve-3d;
   }
 
-  #hint {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    z-index: 20;
+  .shard {
+    position: absolute;
+    top: 0; left: 0;
     pointer-events: none;
+    transform-origin: center center;
+  }
+
+  .shard.anim {
+    will-change: transform, opacity;
   }
 </style>
 </head>
+
 <body>
 
-<div id="bg"></div>
-<div id="shards"></div>
-<div id="hint">16/09/2026</div>
+<div id="bg" aria-hidden="true"></div>
+<div id="shards" aria-hidden="true"></div>
 
 <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
 <script>
-// ============================================================
-//  НАСТРОЙКИ СЛОЁВ
-// ============================================================
 const layers = [
-  { bg: '#ffffff', text: 'Тебе тридцать пять,', color: '#000000' },
-  { bg: '#000000', text: 'или сколько там лет?', color: '#ffffff' },
-  { bg: '#e31e24', text: 'Ну вот.', color: '#ffffff' },
-  { bg: '#ffffff', text: 'Интересно,', color: '#000000' },
-  { bg: '#000000', text: 'счастлива? Нет?', color: '#ffffff' },
-  { bg: '#f2f2f2', text: 'Да ну.', color: '#e31e24' },
-  { bg: '#000000', text: 'Может важно вовсе не то?', color: '#ffffff' },
-  { bg: '#ffffff', text: 'Родилась же когда-то.', color: '#000000' },
-  { bg: '#e31e24', text: 'А теперь — наше всё! ♡', color: '#ffffff' },
+  { bg: '#ffffff', text: 'Тебе тридцать пять,',       color: '#000000' },
+  { bg: '#000000', text: 'или сколько там лет?',      color: '#ffffff' },
+  { bg: '#e31e24', text: 'Ну вот.',                   color: '#ffffff' },
+  { bg: '#ffffff', text: 'Интересно,',                color: '#000000' },
+  { bg: '#000000', text: 'счастлива? Нет?',           color: '#ffffff' },
+  { bg: '#f2f2f2', text: 'Да ну.',                    color: '#e31e24' },
+  { bg: '#000000', text: 'Может важно вовсе не то?',  color: '#ffffff' },
+  { bg: '#ffffff', text: 'Родилась же когда-то.',     color: '#000000' },
+  { bg: '#e31e24', text: 'А теперь — наше всё! ♡',    color: '#ffffff' },
 ];
 
-// ============================================================
-//  АДАПТИВНЫЕ ПАРАМЕТРЫ
-// ============================================================
 const isMobile = /Android|iPhone|iPad|iPod|Mobile|Opera Mini/i.test(navigator.userAgent)
               || window.innerWidth < 700
               || ('ontouchstart' in window && window.innerWidth < 1024);
 
-const SHARD_COUNT   = isMobile ? 18 : 40;
-const POINT_SPREAD  = 0.75;
-const FADE_SPEED    = isMobile ? 0.020 : 0.012;
-const GRAVITY       = isMobile ? 0.30 : 0.25;
-const ROT_DAMPING   = 0.985;
-const ENABLE_3D     = !isMobile;
-const MAX_DPR       = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+const ENABLE_3D   = !isMobile;
+const MAX_DPR     = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 1.75);
 
-let currentLayer = 0;
-let busy = false;
-let lastTime = 0;
-const bgEl = document.getElementById('bg');
+const SHARD_COUNT  = isMobile ? 22 : 34;
+const POINT_SPREAD = isMobile ? 0.85 : 0.6;
+
+const GRAVITY        = isMobile ? 1 : 1;
+const GRAVITY_DELAY  = isMobile ? 110  : 160;
+const IMPULSE        = isMobile ? 1.6  : 1.9;
+const IMPULSE_RAND   = isMobile ? 2.2  : 2.6;
+const FRICTION       = 0.986;
+const Z_FRICTION     = 0.965;
+const ROT_SPEED      = isMobile ? 0.06 : 0.11;
+const ROT_DAMPING    = 0.988;
+const FADE_SPEED     = isMobile ? 0.016 : 0.009;
+const SCALE_FADE     = true;
+
+const LOCK_MS        = isMobile ? 450 : 300;
+const MIN_GAP_MS     = isMobile ? 350 : 180;
+const MAX_SHARDS     = isMobile ? 130 : 240;
+
+let currentLayer   = 0;
+let busy           = false;
+let lastActionTime = 0;
+let lastTime       = 0;
+let running        = false;
+
+const bgEl     = document.getElementById('bg');
 const shardsEl = document.getElementById('shards');
-const shards = [];
+const shards   = [];
 
-// ============================================================
-//  РЕНДЕР СЛОЯ В CANVAS
-// ============================================================
+if (ENABLE_3D) shardsEl.classList.add('desktop');
+
+let bgSpan = document.createElement('span');
+bgSpan.setAttribute('aria-hidden', 'true');
+bgEl.appendChild(bgSpan);
+
+function setBackground(index) {
+  const L = layers[index % layers.length];
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  bgEl.style.background = L.bg;
+  document.body.style.background = L.bg;
+  document.documentElement.style.background = L.bg;
+
+  const fontSize = Math.min(W * 0.12, H * 0.22);
+  bgSpan.textContent = L.text;
+  bgSpan.style.fontSize = fontSize + 'px';
+  bgSpan.style.color = L.color;
+}
+
 function renderLayerCanvas(index) {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const L = layers[index % layers.length];
 
   const canvas = document.createElement('canvas');
-  canvas.width = Math.floor(W * MAX_DPR);
+  canvas.width  = Math.floor(W * MAX_DPR);
   canvas.height = Math.floor(H * MAX_DPR);
   const ctx = canvas.getContext('2d');
   ctx.scale(MAX_DPR, MAX_DPR);
@@ -133,35 +162,9 @@ function renderLayerCanvas(index) {
   ctx.textBaseline = 'middle';
   ctx.fillText(L.text, W / 2, H / 2);
 
-  return { canvas, W, H, L };
+  return { canvas };
 }
 
-// ============================================================
-//  УСТАНОВКА ФОНА
-// ============================================================
-function setBackground(index) {
-  const L = layers[index % layers.length];
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-
-  bgEl.style.background = L.bg;
-  bgEl.innerHTML = '';
-
-  const fontSize = Math.min(W * 0.12, H * 0.22);
-  const span = document.createElement('span');
-  span.textContent = L.text;
-  span.style.fontSize = fontSize + 'px';
-  span.style.color = L.color;
-  bgEl.appendChild(span);
-
-  const isLightBg = (L.bg === '#ffffff' || L.bg === '#f2f2f2');
-  const contrastColor = isLightBg ? '#000000' : '#ffffff';
-  document.getElementById('hint').style.color = contrastColor;
-}
-
-// ============================================================
-//  ТРИАНГУЛЯЦИЯ
-// ============================================================
 function triangulate(cx, cy, W, H) {
   const points = [];
   const maxR = Math.max(W, H) * 0.7;
@@ -183,9 +186,6 @@ function triangulate(cx, cy, W, H) {
   return { points, triangles: d.triangles };
 }
 
-// ============================================================
-//  НАРЕЗКА ОСКОЛКА
-// ============================================================
 function cutShard(sourceCanvas, p0, p1, p2) {
   const minX = Math.min(p0.x, p1.x, p2.x);
   const minY = Math.min(p0.y, p1.y, p2.y);
@@ -215,20 +215,25 @@ function cutShard(sourceCanvas, p0, p1, p2) {
   ctx.closePath();
   ctx.clip();
 
-  ctx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height,
-                0, 0, window.innerWidth, window.innerHeight);
+  ctx.drawImage(
+    sourceCanvas,
+    0, 0, sourceCanvas.width, sourceCanvas.height,
+    0, 0, window.innerWidth, window.innerHeight
+  );
 
   return { canvas: c, minX, minY, w, h };
 }
 
-// ============================================================
-//  СОЗДАНИЕ ОСКОЛКОВ
-// ============================================================
 function createShards(cx, cy) {
-  if (shards.length > (isMobile ? 120 : 300)) return;
+  if (shards.length > MAX_SHARDS) return;
 
-  const { canvas, W, H } = renderLayerCanvas(currentLayer);
+  const { canvas } = renderLayerCanvas(currentLayer);
+  const W = window.innerWidth;
+  const H = window.innerHeight;
   const { points, triangles } = triangulate(cx, cy, W, H);
+
+  const maxDist = Math.hypot(W, H) * 0.5;
+  const rnd = (range) => (Math.random() - 0.5) * range;
 
   for (let i = 0; i < triangles.length; i += 3) {
     const i0 = triangles[i] * 2;
@@ -246,14 +251,13 @@ function createShards(cx, cy) {
     const my = (p0.y + p1.y + p2.y) / 3;
 
     const div = document.createElement('div');
-    div.className = 'shard';
-    div.style.width = cut.w + 'px';
+    div.className = 'shard anim';
+    div.style.width  = cut.w + 'px';
     div.style.height = cut.h + 'px';
 
-    // canvas как элемент — быстрее, чем background-image с dataURL
     cut.canvas.style.display = 'block';
-    cut.canvas.style.width  = cut.w + 'px';
-    cut.canvas.style.height = cut.h + 'px';
+    cut.canvas.style.width   = cut.w + 'px';
+    cut.canvas.style.height  = cut.h + 'px';
     div.appendChild(cut.canvas);
     div.style.transform = `translate(${cut.minX}px, ${cut.minY}px)`;
 
@@ -262,40 +266,57 @@ function createShards(cx, cy) {
     const dx = mx - cx;
     const dy = my - cy;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const speed = (isMobile ? 1.2 : 1.5) + Math.random() * (isMobile ? 2 : 3);
+    const nx = dx / dist;
+    const ny = dy / dist;
+
+    const distFactor = 1 - Math.min(dist / maxDist, 1);
+    const speed = IMPULSE + Math.random() * IMPULSE_RAND + distFactor * 0.6;
+
+    const area = cut.w * cut.h;
+    const sizeK = Math.min(area / 4000, 2.5);
 
     shards.push({
       el: div,
       baseX: cut.minX,
       baseY: cut.minY,
-      x: 0, y: 0,
-      vx: (dx / dist) * speed + (Math.random() - 0.5) * 2,
-      vy: (dy / dist) * speed + (Math.random() - 0.5) * 2 - 1,
+
+      x: 0, y: 0, z: 0,
+      vx: nx * speed + rnd(1.2),
+      vy: ny * speed - (0.7 + Math.random() * 1.0) / (0.7 + sizeK * 0.4) + rnd(1.2),
+      vz: ENABLE_3D ? (10 + Math.random() * 55) : 0,
+
       rx: 0, ry: 0, rz: 0,
-      vrx: ENABLE_3D ? (Math.random() - 0.5) * 0.15 : 0,
-      vry: ENABLE_3D ? (Math.random() - 0.5) * 0.15 : 0,
-      vrz: (Math.random() - 0.5) * 0.08,
+      vrx: ENABLE_3D ? rnd(ROT_SPEED * 2) : 0,
+      vry: ENABLE_3D ? rnd(ROT_SPEED * 2) : 0,
+      vrz: rnd(ROT_SPEED * 1.2),
+
       opacity: 1,
+      scale: 1,
+      age: 0,
     });
   }
+
+  startLoop();
 }
 
-// ============================================================
-//  АНИМАЦИЯ
-// ============================================================
 function animate(t) {
-  requestAnimationFrame(animate);
-  const dt = Math.min((t - lastTime) / 16, 2);
+  const dtMs = Math.min(t - lastTime, 34);
+  const dt = dtMs / 16;
   lastTime = t;
-
-  if (!shards.length) return;
 
   for (let i = shards.length - 1; i >= 0; i--) {
     const s = shards[i];
+    s.age += dtMs;
 
-    s.vy += GRAVITY * dt;
+    if (s.age > GRAVITY_DELAY) s.vy += GRAVITY * dt;
+
     s.x += s.vx * dt;
     s.y += s.vy * dt;
+    s.z += s.vz * dt;
+
+    s.vx *= FRICTION;
+    s.vy *= FRICTION;
+    if (ENABLE_3D) s.vz *= Z_FRICTION;
 
     if (ENABLE_3D) {
       s.rx += s.vrx * dt;
@@ -308,47 +329,83 @@ function animate(t) {
 
     s.opacity -= FADE_SPEED * dt;
 
+    if (SCALE_FADE) {
+      const o = s.opacity > 0 ? s.opacity : 0;
+      s.scale = 1 - (1 - o) * 0.08;
+    }
+
     const tx = s.baseX + s.x;
     const ty = s.baseY + s.y;
 
+    let transform;
     if (ENABLE_3D) {
-      s.el.style.transform =
-        `translate(${tx}px, ${ty}px) ` +
-        `rotateX(${s.rx}rad) rotateY(${s.ry}rad) rotateZ(${s.rz}rad)`;
+      transform =
+        `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, ${s.z.toFixed(1)}px) ` +
+        `rotateX(${s.rx.toFixed(3)}rad) rotateY(${s.ry.toFixed(3)}rad) ` +
+        `rotateZ(${s.rz.toFixed(3)}rad) scale(${s.scale.toFixed(3)})`;
     } else {
-      s.el.style.transform = `translate(${tx}px, ${ty}px) rotate(${s.rz}rad)`;
+      transform =
+        `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) ` +
+        `rotate(${s.rz.toFixed(3)}rad) scale(${s.scale.toFixed(3)})`;
     }
-    s.el.style.opacity = s.opacity < 1 ? s.opacity : 1;
+
+    s.el.style.transform = transform;
+    s.el.style.opacity = s.opacity < 1 ? s.opacity.toFixed(3) : 1;
 
     if (s.opacity <= 0) {
+      s.el.classList.remove('anim');
       s.el.remove();
       shards.splice(i, 1);
     }
   }
+
+  if (shards.length > 0) {
+    requestAnimationFrame(animate);
+  } else {
+    running = false;
+  }
 }
 
-// ============================================================
-//  КЛИК
-// ============================================================
-function onClick(x, y) {
+function startLoop() {
+  if (running) return;
+  running = true;
+  lastTime = performance.now();
+  requestAnimationFrame(animate);
+}
+
+function trigger(x, y) {
+  const now = performance.now();
   if (busy) return;
+  if (now - lastActionTime < MIN_GAP_MS) return;
+
   busy = true;
-  setTimeout(() => busy = false, isMobile ? 400 : 350);
+  lastActionTime = now;
+  setTimeout(() => { busy = false; }, LOCK_MS);
 
   createShards(x, y);
+
   currentLayer = (currentLayer + 1) % layers.length;
   setBackground(currentLayer);
 }
 
-document.addEventListener('click', (e) => {
-  onClick(e.clientX, e.clientY);
-});
-
-document.addEventListener('touchstart', (e) => {
-  if (e.touches.length !== 1) return;
-  const t = e.touches[0];
-  onClick(t.clientX, t.clientY);
+document.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'touch' && e.isPrimary === false) return;
+  trigger(e.clientX, e.clientY);
 }, { passive: true });
+
+if (!window.PointerEvent) {
+  document.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    trigger(t.clientX, t.clientY);
+  }, { passive: true });
+
+  document.addEventListener('mousedown', (e) => {
+    trigger(e.clientX, e.clientY);
+  });
+}
+
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 let resizeTimer = null;
 window.addEventListener('resize', () => {
@@ -356,11 +413,7 @@ window.addEventListener('resize', () => {
   resizeTimer = setTimeout(() => setBackground(currentLayer), 150);
 });
 
-// ============================================================
-//  СТАРТ
-// ============================================================
 setBackground(0);
-requestAnimationFrame(animate);
 </script>
 </body>
 </html>
