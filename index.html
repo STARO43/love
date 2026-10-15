@@ -255,9 +255,6 @@ function onPointerDown(e) {
   clickPosition[0] = e.clientX;
   clickPosition[1] = imageHeight - e.clientY;
 
-  clicks++;
-  document.title = clicks.toLocaleString() + ' Walls Smashed';
-
   triangulate();
   shatter();
 
