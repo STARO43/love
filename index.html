@@ -67,6 +67,13 @@ function getRandomWallDepth() {
   return Math.floor(500 * Math.random()) + 100;
 }
 
+function randomPastelColor() {
+  const h = Math.random();
+  const s = 0.4 + Math.random() * 0.4;
+  const l = 0.5 + Math.random() * 0.3;
+  return new THREE.Color().setHSL(h, s, l).getHex();
+}
+
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
@@ -96,6 +103,7 @@ function init() {
 
   animate();
 }
+
 function fitFontSize(ctx, layer, baseSize) {
   const maxWidth = imageWidth * 0.85;
   let size = baseSize;
@@ -131,7 +139,7 @@ function fitFontSize(ctx, layer, baseSize) {
   }
   return { size: size, lines: [layer.text], font: '900 ' + size + "px 'Unbounded', sans-serif" };
 }
-  
+
 function makeCanvasTexture(layer) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const c = document.createElement('canvas');
@@ -164,13 +172,36 @@ function makeCanvasTexture(layer) {
   return tex;
 }
 
+function makeEmptyTexture(bgColor) {
+  const c = document.createElement('canvas');
+  c.width = 2;
+  c.height = 2;
+  const ctx = c.getContext('2d');
+  const hex = '#' + bgColor.toString(16).padStart(6, '0');
+  ctx.fillStyle = hex;
+  ctx.fillRect(0, 0, 2, 2);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  return tex;
+}
+
 function makeBox() {
   const depth = getRandomWallDepth();
-  const layer = layers[layerIndex % layers.length];
-  const tex = makeCanvasTexture(layer);
+  let layer, tex, sideColor;
+
+  if (layerIndex < layers.length) {
+    layer = layers[layerIndex];
+    tex = makeCanvasTexture(layer);
+    sideColor = new THREE.Color(layer.bg).multiplyScalar(0.82);
+  } else {
+    const bg = randomPastelColor();
+    layer = { bg: bg };
+    tex = makeEmptyTexture(bg);
+    sideColor = new THREE.Color(bg).multiplyScalar(0.82);
+  }
 
   const geo = new THREE.BoxGeometry(imageWidth, imageHeight, depth);
-  const sideColor = new THREE.Color(layer.bg).multiplyScalar(0.82);
   const sideMat = new THREE.MeshPhongMaterial({ color: sideColor });
   const mats = [
     sideMat,
@@ -186,7 +217,7 @@ function makeBox() {
   box.position.z = cursor;
   box.name = 'box';
   box.userData.depth = depth;
-  box.userData.layer = layerIndex % layers.length;
+  box.userData.layer = layerIndex;
   box.userData.texture = tex;
   box.userData.sideMat = sideMat;
   box.userData.isWall = true;
@@ -303,7 +334,13 @@ function shatter() {
   const oldMats = Array.isArray(frontBox.material) ? frontBox.material : [frontBox.material];
   for (let i = 0; i < oldMats.length; i++) oldMats[i].dispose();
 
-  const sideColor = new THREE.Color(layers[frontBox.userData.layer].bg).multiplyScalar(0.82);
+  let sideColor;
+  if (frontBox.userData.layer < layers.length) {
+    sideColor = new THREE.Color(layers[frontBox.userData.layer].bg).multiplyScalar(0.82);
+  } else {
+    sideColor = new THREE.Color(randomPastelColor()).multiplyScalar(0.82);
+  }
+
   const batch = {
     tex: tex,
     frontMat: new THREE.MeshBasicMaterial({ map: tex }),
