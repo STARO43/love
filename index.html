@@ -171,13 +171,29 @@ function makeCanvasTexture(layer) {
 }
 
 function makeEmptyTexture(bgColor) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const c = document.createElement('canvas');
-  c.width = 2;
-  c.height = 2;
+  c.width  = Math.round(imageWidth  * dpr);
+  c.height = Math.round(imageHeight * dpr);
   const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+
   const hex = '#' + bgColor.toString(16).padStart(6, '0');
   ctx.fillStyle = hex;
-  ctx.fillRect(0, 0, 2, 2);
+  ctx.fillRect(0, 0, imageWidth, imageHeight);
+
+  const r = (bgColor >> 16) & 0xff;
+  const g = (bgColor >> 8)  & 0xff;
+  const b =  bgColor        & 0xff;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  ctx.fillStyle = luminance > 0.5 ? '#000000' : '#ffffff';
+
+  const size = Math.min(imageWidth, imageHeight) * 0.4;
+  ctx.font = '900 ' + size + "px 'Unbounded', sans-serif";
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('♡', imageWidth / 2, imageHeight / 2);
+
   const tex = new THREE.CanvasTexture(c);
   tex.minFilter = THREE.LinearFilter;
   tex.magFilter = THREE.LinearFilter;
