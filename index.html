@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<link rel="icon" href="favicon.ico" type="image/x-icon"><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="favicon.ico" type="image/x-icon">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>16/09/2026</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,10 +13,11 @@
     background: #ffffff;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     user-select: none;
-    perspective: 1000px;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
-  /* Фоновый слой — всегда снизу */
   #bg {
     position: fixed;
     inset: 0;
@@ -33,51 +35,26 @@
     word-wrap: break-word;
   }
 
-  /* Слой осколков — поверх всего */
   #shards {
     position: fixed;
     inset: 0;
     z-index: 10;
     pointer-events: none;
-    transform-style: preserve-3d;
+    overflow: hidden;
   }
 
   .shard {
     position: absolute;
     top: 0;
     left: 0;
-    background-repeat: no-repeat;
-    backface-visibility: hidden;
+    will-change: transform, opacity;
     pointer-events: none;
   }
 
-  /* Фирменный минималистичный маркер в углу */
-  #signature {
-    position: fixed;
-    top: 30px;
-    left: 30px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
-    font-weight: bold;
-    z-index: 50;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  #signature::before {
-    content: '';
-    display: block;
-    width: 10px;
-    height: 10px;
-    background: currentColor;
-  }
-
-  /* Подсказка в стиле технической маркировки */
   #hint {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
+    bottom: 20px;
+    right: 20px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 10px;
     text-transform: uppercase;
@@ -91,13 +68,12 @@
 
 <div id="bg"></div>
 <div id="shards"></div>
-<div id="signature">16/09/2026</div>
-<div id="hint">Кисуле</div>
+<div id="hint">16/09/2026</div>
 
 <script src="https://unpkg.com/delaunator@5.0.0/delaunator.min.js"></script>
 <script>
 // ============================================================
-//  НАСТРОЙКИ СЛОЁВ (Палитра и типографика в стиле САЛ)
+//  НАСТРОЙКИ СЛОЁВ
 // ============================================================
 const layers = [
   { bg: '#ffffff', text: 'Тебе тридцать пять,', color: '#000000' },
@@ -112,17 +88,20 @@ const layers = [
 ];
 
 // ============================================================
-//  ПАРАМЕТРЫ ЭФФЕКТА (НЕ ИЗМЕНЕНЫ)
+//  АДАПТИВНЫЕ ПАРАМЕТРЫ
 // ============================================================
-const SHARD_COUNT = 40;      
-const POINT_SPREAD = 0.75;   
-const FADE_SPEED = 0.012;    
-const GRAVITY = 0.25;
-const ROT_DAMPING = 0.985;   
+const isMobile = /Android|iPhone|iPad|iPod|Mobile|Opera Mini/i.test(navigator.userAgent)
+              || window.innerWidth < 700
+              || ('ontouchstart' in window && window.innerWidth < 1024);
 
-// ============================================================
-//  СОСТОЯНИЕ
-// ============================================================
+const SHARD_COUNT   = isMobile ? 18 : 40;
+const POINT_SPREAD  = 0.75;
+const FADE_SPEED    = isMobile ? 0.020 : 0.012;
+const GRAVITY       = isMobile ? 0.30 : 0.25;
+const ROT_DAMPING   = 0.985;
+const ENABLE_3D     = !isMobile;
+const MAX_DPR       = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+
 let currentLayer = 0;
 let busy = false;
 let lastTime = 0;
@@ -139,9 +118,10 @@ function renderLayerCanvas(index) {
   const L = layers[index % layers.length];
 
   const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = Math.floor(W * MAX_DPR);
+  canvas.height = Math.floor(H * MAX_DPR);
   const ctx = canvas.getContext('2d');
+  ctx.scale(MAX_DPR, MAX_DPR);
 
   ctx.fillStyle = L.bg;
   ctx.fillRect(0, 0, W, H);
@@ -174,16 +154,13 @@ function setBackground(index) {
   span.style.color = L.color;
   bgEl.appendChild(span);
 
-  // Автоматическая адаптация цвета мета-элементов для идеального контраста
   const isLightBg = (L.bg === '#ffffff' || L.bg === '#f2f2f2');
   const contrastColor = isLightBg ? '#000000' : '#ffffff';
-  
-  document.getElementById('signature').style.color = contrastColor;
   document.getElementById('hint').style.color = contrastColor;
 }
 
 // ============================================================
-//  ТРИАНГУЛЯЦИЯ (с неравномерным распределением)
+//  ТРИАНГУЛЯЦИЯ
 // ============================================================
 function triangulate(cx, cy, W, H) {
   const points = [];
@@ -207,7 +184,7 @@ function triangulate(cx, cy, W, H) {
 }
 
 // ============================================================
-//  НАРЕЗКА ОСКОЛКА В ОТДЕЛЬНЫЙ CANVAS
+//  НАРЕЗКА ОСКОЛКА
 // ============================================================
 function cutShard(sourceCanvas, p0, p1, p2) {
   const minX = Math.min(p0.x, p1.x, p2.x);
@@ -217,12 +194,15 @@ function cutShard(sourceCanvas, p0, p1, p2) {
   const w = Math.ceil(maxX - minX);
   const h = Math.ceil(maxY - minY);
 
-  if (w < 8 || h < 8) return null;
+  if (w < 6 || h < 6) return null;
 
+  const dpr = MAX_DPR;
   const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
+  c.width  = Math.ceil(w * dpr);
+  c.height = Math.ceil(h * dpr);
+
   const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
 
   const lx0 = p0.x - minX, ly0 = p0.y - minY;
   const lx1 = p1.x - minX, ly1 = p1.y - minY;
@@ -235,7 +215,8 @@ function cutShard(sourceCanvas, p0, p1, p2) {
   ctx.closePath();
   ctx.clip();
 
-  ctx.drawImage(sourceCanvas, minX, minY, w, h, 0, 0, w, h);
+  ctx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height,
+                0, 0, window.innerWidth, window.innerHeight);
 
   return { canvas: c, minX, minY, w, h };
 }
@@ -244,6 +225,8 @@ function cutShard(sourceCanvas, p0, p1, p2) {
 //  СОЗДАНИЕ ОСКОЛКОВ
 // ============================================================
 function createShards(cx, cy) {
+  if (shards.length > (isMobile ? 120 : 300)) return;
+
   const { canvas, W, H } = renderLayerCanvas(currentLayer);
   const { points, triangles } = triangulate(cx, cy, W, H);
 
@@ -266,29 +249,32 @@ function createShards(cx, cy) {
     div.className = 'shard';
     div.style.width = cut.w + 'px';
     div.style.height = cut.h + 'px';
-    div.style.backgroundImage = `url(${cut.canvas.toDataURL()})`;
-    div.style.backgroundSize = `${cut.w}px ${cut.h}px`;
-    div.style.transform = `translate3d(${cut.minX}px, ${cut.minY}px, 0)`;
+
+    // canvas как элемент — быстрее, чем background-image с dataURL
+    cut.canvas.style.display = 'block';
+    cut.canvas.style.width  = cut.w + 'px';
+    cut.canvas.style.height = cut.h + 'px';
+    div.appendChild(cut.canvas);
+    div.style.transform = `translate(${cut.minX}px, ${cut.minY}px)`;
 
     shardsEl.appendChild(div);
 
     const dx = mx - cx;
     const dy = my - cy;
     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-    const speed = 1.5 + Math.random() * 3;
+    const speed = (isMobile ? 1.2 : 1.5) + Math.random() * (isMobile ? 2 : 3);
 
     shards.push({
       el: div,
       baseX: cut.minX,
       baseY: cut.minY,
-      x: 0, y: 0, z: 0,
+      x: 0, y: 0,
       vx: (dx / dist) * speed + (Math.random() - 0.5) * 2,
       vy: (dy / dist) * speed + (Math.random() - 0.5) * 2 - 1,
-      vz: 30 + Math.random() * 80,
       rx: 0, ry: 0, rz: 0,
-      vrx: (Math.random() - 0.5) * 0.15,
-      vry: (Math.random() - 0.5) * 0.15,
-      vrz: (Math.random() - 0.5) * 0.1,
+      vrx: ENABLE_3D ? (Math.random() - 0.5) * 0.15 : 0,
+      vry: ENABLE_3D ? (Math.random() - 0.5) * 0.15 : 0,
+      vrz: (Math.random() - 0.5) * 0.08,
       opacity: 1,
     });
   }
@@ -302,28 +288,37 @@ function animate(t) {
   const dt = Math.min((t - lastTime) / 16, 2);
   lastTime = t;
 
+  if (!shards.length) return;
+
   for (let i = shards.length - 1; i >= 0; i--) {
     const s = shards[i];
 
     s.vy += GRAVITY * dt;
     s.x += s.vx * dt;
     s.y += s.vy * dt;
-    s.z += s.vz * dt;
-    s.vz *= 0.96;
 
-    s.rx += s.vrx * dt;
-    s.ry += s.vry * dt;
+    if (ENABLE_3D) {
+      s.rx += s.vrx * dt;
+      s.ry += s.vry * dt;
+      s.vrx *= ROT_DAMPING;
+      s.vry *= ROT_DAMPING;
+    }
     s.rz += s.vrz * dt;
-    s.vrx *= ROT_DAMPING;
-    s.vry *= ROT_DAMPING;
     s.vrz *= ROT_DAMPING;
 
-    s.opacity -= (FADE_SPEED * (0.7 + Math.random() * 0.6)) * dt;
+    s.opacity -= FADE_SPEED * dt;
 
-    s.el.style.transform =
-      `translate3d(${s.baseX + s.x}px, ${s.baseY + s.y}px, ${s.z}px) ` +
-      `rotateX(${s.rx}rad) rotateY(${s.ry}rad) rotateZ(${s.rz}rad)`;
-    s.el.style.opacity = Math.max(0, s.opacity);
+    const tx = s.baseX + s.x;
+    const ty = s.baseY + s.y;
+
+    if (ENABLE_3D) {
+      s.el.style.transform =
+        `translate(${tx}px, ${ty}px) ` +
+        `rotateX(${s.rx}rad) rotateY(${s.ry}rad) rotateZ(${s.rz}rad)`;
+    } else {
+      s.el.style.transform = `translate(${tx}px, ${ty}px) rotate(${s.rz}rad)`;
+    }
+    s.el.style.opacity = s.opacity < 1 ? s.opacity : 1;
 
     if (s.opacity <= 0) {
       s.el.remove();
@@ -335,28 +330,30 @@ function animate(t) {
 // ============================================================
 //  КЛИК
 // ============================================================
-function onClick(e) {
+function onClick(x, y) {
   if (busy) return;
   busy = true;
-  setTimeout(() => busy = false, 350);
+  setTimeout(() => busy = false, isMobile ? 400 : 350);
 
-  const cx = e.clientX;
-  const cy = e.clientY;
-
-  createShards(cx, cy);
-
+  createShards(x, y);
   currentLayer = (currentLayer + 1) % layers.length;
   setBackground(currentLayer);
 }
 
-document.addEventListener('click', onClick);
-document.addEventListener('touchstart', (e) => {
-  e.preventDefault();
-  onClick(e.touches[0]);
-}, { passive: false });
+document.addEventListener('click', (e) => {
+  onClick(e.clientX, e.clientY);
+});
 
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length !== 1) return;
+  const t = e.touches[0];
+  onClick(t.clientX, t.clientY);
+}, { passive: true });
+
+let resizeTimer = null;
 window.addEventListener('resize', () => {
-  setBackground(currentLayer);
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => setBackground(currentLayer), 150);
 });
 
 // ============================================================
