@@ -123,6 +123,8 @@ function fitFontSize(ctx, layer, baseSize) {
       for (let i = 0; i < lines.length; i++) {
         if (ctx.measureText(lines[i]).width > maxWidth) { ok = false; break; }
       }
+      const totalHeight = lines.length * size * 1.2;
+      if (totalHeight > imageHeight * 0.8) ok = false;
       if (ok) return { size: size, lines: lines, font: font };
     }
     size -= 2;
