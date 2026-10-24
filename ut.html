@@ -1,204 +1,870 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Зайчиха</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#06060f">
+<title>Зайчиха</title>
+<style>
+    :root {
+        --accent: #a78bfa;
+        --accent-2: #f0abfc;
+        --ink: #ffffff;
+    }
 
-        html, body {
-            height: 100%;
-            background: #0a0a0a;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -webkit-tap-highlight-color: transparent;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+        min-height: 100%;
+        background: #06060f;
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+    }
+
+    body {
+        position: relative;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px 20px calc(28px + env(safe-area-inset-bottom));
+    }
+
+    /* ================= ФОН ================= */
+
+    .bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        background:
+            radial-gradient(120% 90% at 50% -10%, #1c1a3d 0%, #0d0c1c 45%, #06060f 100%);
+    }
+
+    .aurora {
+        position: absolute;
+        border-radius: 50%;
+        will-change: transform;
+        pointer-events: none;
+    }
+
+    .a1 {
+        width: 95vmax; height: 95vmax;
+        top: -42vmax; left: -34vmax;
+        background: radial-gradient(circle at 50% 50%, rgba(124, 92, 255, .30), rgba(124, 92, 255, 0) 62%);
+        animation: drift1 26s ease-in-out infinite alternate;
+    }
+    .a2 {
+        width: 75vmax; height: 75vmax;
+        bottom: -32vmax; right: -26vmax;
+        background: radial-gradient(circle at 50% 50%, rgba(236, 121, 214, .20), rgba(236, 121, 214, 0) 62%);
+        animation: drift2 33s ease-in-out infinite alternate;
+    }
+    .a3 {
+        width: 65vmax; height: 65vmax;
+        top: 24%; left: 42%;
+        background: radial-gradient(circle at 50% 50%, rgba(64, 196, 255, .16), rgba(64, 196, 255, 0) 62%);
+        animation: drift3 39s ease-in-out infinite alternate;
+    }
+
+    @keyframes drift1 {
+        from { transform: translate3d(0, 0, 0) scale(1); }
+        to   { transform: translate3d(7vmax, 5vmax, 0) scale(1.16); }
+    }
+    @keyframes drift2 {
+        from { transform: translate3d(0, 0, 0) scale(1.05); }
+        to   { transform: translate3d(-6vmax, -4vmax, 0) scale(.92); }
+    }
+    @keyframes drift3 {
+        from { transform: translate3d(0, 0, 0) scale(.95); }
+        to   { transform: translate3d(-5vmax, 6vmax, 0) scale(1.12); }
+    }
+
+    #stars {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(120% 100% at 50% 42%, transparent 38%, rgba(0, 0, 0, .58) 100%);
+    }
+
+    .grain {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        pointer-events: none;
+        opacity: .035;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        mix-blend-mode: overlay;
+    }
+
+    /* ================= СЦЕНА ================= */
+
+    .stage {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: clamp(26px, 6vh, 48px);
+    }
+
+    .title {
+        font-size: clamp(20px, 5.6vw, 30px);
+        font-weight: 300;
+        letter-spacing: .3em;
+        text-indent: .3em;
+        text-transform: uppercase;
+        background: linear-gradient(180deg, #ffffff 10%, rgba(200, 190, 255, .62) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: riseIn 1s cubic-bezier(.2, .8, .2, 1) both;
+        user-select: none;
+    }
+
+    .buttons {
+        display: flex;
+        align-items: stretch;
+        gap: clamp(16px, 5vw, 40px);
+    }
+
+    .slot {
+        display: flex;
+        animation: riseIn .95s cubic-bezier(.2, .8, .2, 1) both;
+        animation-delay: var(--delay, 0s);
+    }
+
+    @keyframes riseIn {
+        from { opacity: 0; transform: translateY(26px) scale(.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ================= КАРТОЧКА ================= */
+
+    .audio-btn {
+        position: relative;
+        width: clamp(142px, 36vw, 200px);
+        aspect-ratio: 3 / 4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 14px 12px 18px;
+        border: 1px solid rgba(255, 255, 255, .10);
+        border-radius: 34px;
+        background:
+            radial-gradient(120% 80% at 50% 0%, rgba(255, 255, 255, .10), rgba(255, 255, 255, 0) 60%),
+            linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .012));
+        -webkit-backdrop-filter: blur(14px) saturate(130%);
+        backdrop-filter: blur(14px) saturate(130%);
+        box-shadow:
+            0 26px 60px -24px rgba(0, 0, 0, .95),
+            inset 0 1px 0 rgba(255, 255, 255, .12);
+        color: #fff;
+        font-family: inherit;
+        cursor: pointer;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+        user-select: none;
+        -webkit-user-select: none;
+        will-change: transform;
+        transition:
+            transform .38s cubic-bezier(.34, 1.4, .64, 1),
+            box-shadow .45s ease,
+            border-color .45s ease,
+            opacity .4s ease,
+            filter .4s ease;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .audio-btn:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 255, 255, .22);
+            box-shadow:
+                0 34px 70px -24px rgba(0, 0, 0, .95),
+                0 0 40px -14px rgba(150, 120, 255, .45),
+                inset 0 1px 0 rgba(255, 255, 255, .18);
         }
+    }
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 28px;
-            padding: 24px;
+    .audio-btn:active {
+        transform: translateY(-1px) scale(.972);
+        transition-duration: .12s;
+    }
+
+    .audio-btn:focus-visible {
+        outline: 2px solid rgba(170, 150, 255, .9);
+        outline-offset: 5px;
+    }
+
+    /* приглушение неактивной карточки */
+    .audio-btn.is-dimmed {
+        opacity: .58;
+        filter: saturate(.7);
+    }
+
+    /* ================= СОСТОЯНИЕ ВОСПРОИЗВЕДЕНИЯ ================= */
+
+    .audio-btn.playing {
+        transform: translateY(-4px);
+        border-color: rgba(178, 162, 255, .48);
+        animation: cardPulse 2.8s ease-in-out infinite;
+    }
+
+    @keyframes cardPulse {
+        0%, 100% {
+            box-shadow:
+                0 26px 62px -24px rgba(0, 0, 0, .95),
+                0 0 44px -18px rgba(124, 92, 255, .65),
+                inset 0 1px 0 rgba(255, 255, 255, .16);
         }
-
-        .audio-btn {
-            width: min(70vw, 260px);
-            height: min(70vw, 260px);
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-family: inherit;
-            cursor: pointer;
-            transition: transform 0.15s ease, background 0.25s ease, border-color 0.25s ease;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-            user-select: none;
-            -webkit-user-select: none;
+        50% {
+            box-shadow:
+                0 30px 76px -22px rgba(0, 0, 0, .95),
+                0 0 72px -12px rgba(150, 118, 255, .95),
+                inset 0 1px 0 rgba(255, 255, 255, .24);
         }
+    }
 
-        .audio-btn:active {
-            transform: scale(0.97);
-            background: rgba(255, 255, 255, 0.12);
-        }
+    /* пульсирующее кольцо */
+    .audio-btn::after {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        border: 1px solid rgba(178, 158, 255, .7);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .audio-btn.playing::after {
+        animation: ringPulse 2.6s cubic-bezier(.2, .6, .3, 1) infinite;
+    }
 
-        .audio-btn .icon {
-            font-size: 44px;
-            line-height: 1;
-        }
+    @keyframes ringPulse {
+        0%   { opacity: .65; transform: scale(1); }
+        70%  { opacity: 0;   transform: scale(1.1); }
+        100% { opacity: 0;   transform: scale(1.1); }
+    }
 
-        .audio-btn .subtitle {
-            font-size: 14px;
-            letter-spacing: 0.5px;
-            opacity: 0.6;
-            text-align: center;
-            padding: 0 16px;
-        }
+    /* мягкое свечение за зайчиком */
+    .halo {
+        position: absolute;
+        top: 10%;
+        left: 15%;
+        width: 70%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        pointer-events: none;
+        background: radial-gradient(circle, rgba(167, 139, 250, .55), rgba(167, 139, 250, 0) 68%);
+        opacity: 0;
+        transition: opacity .6s ease;
+    }
+    .playing .halo {
+        opacity: 1;
+        animation: haloPulse 3.2s ease-in-out infinite;
+    }
 
-        .audio-btn.playing {
-            background: rgba(255, 255, 255, 0.14);
-            border-color: rgba(255, 255, 255, 0.55);
-        }
+    @keyframes haloPulse {
+        0%, 100% { transform: scale(.88); opacity: .55; }
+        50%      { transform: scale(1.12); opacity: .95; }
+    }
 
-        .audio-btn.playing .subtitle { opacity: 1; }
+    /* ================= ЗАЙЧИК ================= */
 
-        .audio-btn .dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #fff;
+    .bunny {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: breathe 4.6s ease-in-out infinite;
+        transform-origin: 50% 78%;
+        will-change: transform;
+    }
+
+    .bunny svg {
+        width: 92%;
+        height: 92%;
+        display: block;
+        overflow: visible;
+    }
+
+    @keyframes breathe {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50%      { transform: translateY(-3px) scale(1.035); }
+    }
+
+    .playing .bunny {
+        animation: breatheFast 1.9s ease-in-out infinite;
+    }
+
+    @keyframes breatheFast {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50%      { transform: translateY(-5px) scale(1.06); }
+    }
+
+    /* уши */
+    .ear {
+        transform-box: fill-box;
+        transform-origin: 50% 100%;
+        will-change: transform;
+    }
+    .ear-l { animation: twitchL 4.6s ease-in-out infinite; }
+    .ear-r { animation: twitchR 5.3s ease-in-out infinite; }
+
+    @keyframes twitchL {
+        0%, 52%, 100% { transform: rotate(-13deg); }
+        60%           { transform: rotate(-21deg); }
+        68%           { transform: rotate(-6deg); }
+        76%           { transform: rotate(-16deg); }
+        84%           { transform: rotate(-12deg); }
+    }
+    @keyframes twitchR {
+        0%, 58%, 100% { transform: rotate(13deg); }
+        66%           { transform: rotate(21deg); }
+        74%           { transform: rotate(6deg); }
+        82%           { transform: rotate(15deg); }
+    }
+
+    .playing .ear-l { animation-duration: 2.1s; }
+    .playing .ear-r { animation-duration: 2.5s; }
+
+    /* глаза */
+    .eye {
+        transform-box: fill-box;
+        transform-origin: center;
+        will-change: transform;
+    }
+    .eye-l { animation: blink 5.4s ease-in-out infinite; }
+    .eye-r { animation: blink 5.4s ease-in-out infinite .06s; }
+
+    @keyframes blink {
+        0%, 90%, 100% { transform: scaleY(1); }
+        94%           { transform: scaleY(.08); }
+    }
+
+    .playing .eye-l { animation-duration: 3.6s; }
+    .playing .eye-r { animation-duration: 3.6s; }
+
+    /* ================= НОТЫ ================= */
+
+    .notes {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .notes i {
+        position: absolute;
+        left: 50%;
+        bottom: 62%;
+        font-style: normal;
+        font-size: clamp(14px, 4.2vw, 19px);
+        line-height: 1;
+        color: #ded2ff;
+        text-shadow: 0 0 16px rgba(160, 130, 255, .95);
+        opacity: 0;
+        will-change: transform, opacity;
+    }
+
+    .notes i:nth-child(1) { --dx: -32px; animation-delay: 0s; }
+    .notes i:nth-child(2) { --dx: 6px;   animation-delay: 1.15s; }
+    .notes i:nth-child(3) { --dx: 34px;  animation-delay: 2.3s; }
+
+    .playing .notes i {
+        animation: noteFloat 3.45s cubic-bezier(.22, .61, .36, 1) infinite;
+    }
+
+    @keyframes noteFloat {
+        0% {
             opacity: 0;
-            transition: opacity 0.2s ease;
+            transform: translate(-50%, 0) scale(.45) rotate(-14deg);
         }
-
-        .audio-btn.playing .dot {
+        14% {
             opacity: 1;
-            animation: dotPulse 1.5s infinite ease-in-out;
+            transform: translate(calc(-50% + var(--dx) * .3), -16px) scale(1) rotate(0deg);
         }
+        70% { opacity: .85; }
+        100% {
+            opacity: 0;
+            transform: translate(calc(-50% + var(--dx)), -92px) scale(.85) rotate(14deg);
+        }
+    }
 
-        @keyframes dotPulse {
-            0%, 100% { opacity: 0.4; transform: scale(1); }
-            50%      { opacity: 1;   transform: scale(1.4); }
-        }
+    /* ================= ПОДПИСЬ ================= */
 
-        @media (max-height: 700px) {
-            .audio-btn { width: min(50vw, 160px); height: min(50vw, 160px); }
-            .audio-btn .icon { font-size: 32px; }
-            .audio-btn .subtitle { font-size: 12px; }
-            body { gap: 18px; }
+    .label {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-size: 13.5px;
+        font-weight: 500;
+        letter-spacing: .06em;
+        color: rgba(255, 255, 255, .74);
+        transition: color .35s ease;
+    }
+
+    .playing .label { color: #fff; }
+
+    .state-icon {
+        position: relative;
+        width: 11px;
+        height: 11px;
+        flex: 0 0 auto;
+    }
+
+    .state-icon svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        fill: currentColor;
+        transition: opacity .28s ease, transform .28s ease;
+    }
+
+    .state-icon .ico-pause { opacity: 0; transform: scale(.5); }
+    .playing .state-icon .ico-play  { opacity: 0; transform: scale(.5); }
+    .playing .state-icon .ico-pause { opacity: 1; transform: scale(1); }
+
+    /* ================= АДАПТИВ / ДОСТУПНОСТЬ ================= */
+
+    @media (max-height: 640px) {
+        .audio-btn { width: clamp(118px, 30vw, 160px); border-radius: 28px; }
+        .stage { gap: 20px; }
+        .title { font-size: 18px; letter-spacing: .24em; }
+    }
+
+    @media (max-width: 360px) {
+        .audio-btn { width: 128px; }
+        .label { font-size: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: .001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .001ms !important;
         }
-    </style>
+    }
+</style>
 </head>
 <body>
-    <button class="audio-btn" id="btn1" type="button">
-        <span class="icon">▶</span>
-        <span class="subtitle">Стихи</span>
-        <span class="dot"></span>
-    </button>
 
-    <button class="audio-btn" id="btn2" type="button">
-        <span class="icon">▶</span>
-        <span class="subtitle">Диалог</span>
-        <span class="dot"></span>
-    </button>
+<div class="bg" aria-hidden="true">
+    <div class="aurora a1"></div>
+    <div class="aurora a2"></div>
+    <div class="aurora a3"></div>
+    <canvas id="stars"></canvas>
+    <div class="vignette"></div>
+</div>
+<div class="grain" aria-hidden="true"></div>
 
-    <audio id="audio1" src="1.mp3" preload="metadata" playsinline webkit-playsinline></audio>
-    <audio id="audio2" src="2.mp3" preload="metadata" playsinline webkit-playsinline></audio>
+<main class="stage">
 
-    <script>
-        (function () {
-            const audio1 = document.getElementById('audio1');
-            const audio2 = document.getElementById('audio2');
-            const btn1   = document.getElementById('btn1');
-            const btn2   = document.getElementById('btn2');
+    <h1 class="title">Зайчиха</h1>
 
-            // Разблокировка аудио на iOS — только в первом касании
-            let unlocked = false;
-            function unlockAudio() {
-                if (unlocked) return;
-                unlocked = true;
-                [audio1, audio2].forEach(a => {
-                    try {
-                        a.load();
-                        const p = a.play();
-                        if (p && p.then) {
-                            p.then(() => { a.pause(); a.currentTime = 0; })
-                             .catch(() => {});
-                        } else {
-                            a.pause(); a.currentTime = 0;
-                        }
-                    } catch (e) {}
-                });
+    <div class="buttons">
+
+        <!-- ===== СТИХИ ===== -->
+        <div class="slot" style="--delay:.10s">
+            <button class="audio-btn" id="btn1" type="button" aria-label="Стихи">
+                <span class="halo" aria-hidden="true"></span>
+
+                <span class="bunny">
+                    <svg viewBox="0 0 120 142" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="furA" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#d8d5f4"/>
+                            </linearGradient>
+                            <linearGradient id="furB" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#e4ddf8"/>
+                            </linearGradient>
+                            <radialGradient id="innerEar" cx="50%" cy="38%" r="62%">
+                                <stop offset="0%" stop-color="#ffc9dc"/>
+                                <stop offset="100%" stop-color="#ef8fb4"/>
+                            </radialGradient>
+                        </defs>
+
+                        <!-- уши -->
+                        <g class="ear ear-l">
+                            <ellipse cx="44" cy="42" rx="12" ry="35" fill="url(#furA)"/>
+                            <ellipse cx="44" cy="44" rx="6" ry="26" fill="url(#innerEar)" opacity=".85"/>
+                        </g>
+                        <g class="ear ear-r">
+                            <ellipse cx="76" cy="42" rx="12" ry="35" fill="url(#furA)"/>
+                            <ellipse cx="76" cy="44" rx="6" ry="26" fill="url(#innerEar)" opacity=".85"/>
+                        </g>
+
+                        <!-- голова -->
+                        <path d="M60 48 C88 48 105 66 105 90 C105 113 85 128 60 128 C35 128 15 113 15 90 C15 66 32 48 60 48 Z"
+                              fill="url(#furB)"/>
+
+                        <!-- щёчки -->
+                        <ellipse cx="33" cy="102" rx="10" ry="6" fill="#ff9dc0" opacity=".32"/>
+                        <ellipse cx="87" cy="102" rx="10" ry="6" fill="#ff9dc0" opacity=".32"/>
+
+                        <!-- усики -->
+                        <path d="M20 92 L34 94 M20 100 L33 98.5"
+                              stroke="#ffffff" stroke-opacity=".3" stroke-width="1.2" stroke-linecap="round"/>
+                        <path d="M100 92 L86 94 M100 100 L87 98.5"
+                              stroke="#ffffff" stroke-opacity=".3" stroke-width="1.2" stroke-linecap="round"/>
+
+                        <!-- глаза -->
+                        <g class="eye eye-l">
+                            <ellipse cx="44" cy="88" rx="4.6" ry="5.4" fill="#2a2540"/>
+                            <circle cx="42.4" cy="86" r="1.6" fill="#ffffff" opacity=".95"/>
+                        </g>
+                        <g class="eye eye-r">
+                            <ellipse cx="76" cy="88" rx="4.6" ry="5.4" fill="#2a2540"/>
+                            <circle cx="74.4" cy="86" r="1.6" fill="#ffffff" opacity=".95"/>
+                        </g>
+
+                        <!-- носик -->
+                        <path d="M56.6 97.4 Q60 95.6 63.4 97.4 Q62 102.4 60 103.4 Q58 102.4 56.6 97.4 Z"
+                              fill="#ff8fb5"/>
+
+                        <!-- ротик -->
+                        <path d="M60 103.4 L60 106.4 M60 106.4 Q55.8 111 51.6 106.6 M60 106.4 Q64.2 111 68.4 106.6"
+                              stroke="#c8a3b7" stroke-width="1.5" stroke-linecap="round" fill="none" opacity=".9"/>
+                    </svg>
+                </span>
+
+                <span class="notes" aria-hidden="true"><i>♪</i><i>♫</i><i>♪</i></span>
+
+                <span class="label">
+                    <span class="state-icon" aria-hidden="true">
+                        <svg class="ico-play" viewBox="0 0 12 12"><path d="M3 1.4 L10.2 6 L3 10.6 Z"/></svg>
+                        <svg class="ico-pause" viewBox="0 0 12 12">
+                            <rect x="2.4" y="1.6" width="2.7" height="8.8" rx="1.1"/>
+                            <rect x="6.9" y="1.6" width="2.7" height="8.8" rx="1.1"/>
+                        </svg>
+                    </span>
+                    <span class="label-text">Стихи</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- ===== ДИАЛОГ ===== -->
+        <div class="slot" style="--delay:.22s">
+            <button class="audio-btn" id="btn2" type="button" aria-label="Диалог">
+                <span class="halo" aria-hidden="true"></span>
+
+                <span class="bunny">
+                    <svg viewBox="0 0 120 142" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="furC" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#fdfbff"/>
+                                <stop offset="100%" stop-color="#cfc9f0"/>
+                            </linearGradient>
+                            <linearGradient id="furD" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#ffffff"/>
+                                <stop offset="100%" stop-color="#ddd3f7"/>
+                            </linearGradient>
+                            <radialGradient id="innerEar2" cx="50%" cy="38%" r="62%">
+                                <stop offset="0%" stop-color="#ffd0e2"/>
+                                <stop offset="100%" stop-color="#f292b8"/>
+                            </radialGradient>
+                        </defs>
+
+                        <!-- уши -->
+                        <g class="ear ear-l">
+                            <ellipse cx="42" cy="44" rx="11.5" ry="34" fill="url(#furC)"/>
+                            <ellipse cx="42" cy="46" rx="5.6" ry="25" fill="url(#innerEar2)" opacity=".85"/>
+                        </g>
+                        <g class="ear ear-r">
+                            <ellipse cx="78" cy="44" rx="11.5" ry="34" fill="url(#furC)"/>
+                            <ellipse cx="78" cy="46" rx="5.6" ry="25" fill="url(#innerEar2)" opacity=".85"/>
+                        </g>
+
+                        <!-- голова -->
+                        <path d="M60 50 C87 50 104 67 104 90 C104 112 84 127 60 127 C36 127 16 112 16 90 C16 67 33 50 60 50 Z"
+                              fill="url(#furD)"/>
+
+                        <!-- щёчки -->
+                        <ellipse cx="34" cy="101" rx="9.5" ry="5.8" fill="#ff9dc0" opacity=".34"/>
+                        <ellipse cx="86" cy="101" rx="9.5" ry="5.8" fill="#ff9dc0" opacity=".34"/>
+
+                        <!-- глаза-полумесяцы (радостно прищурены) -->
+                        <g class="eye eye-l">
+                            <path d="M39 88 Q44 82.6 49 88" stroke="#2a2540" stroke-width="3" stroke-linecap="round" fill="none"/>
+                        </g>
+                        <g class="eye eye-r">
+                            <path d="M71 88 Q76 82.6 81 88" stroke="#2a2540" stroke-width="3" stroke-linecap="round" fill="none"/>
+                        </g>
+
+                        <!-- носик -->
+                        <path d="M56.8 96.6 Q60 94.8 63.2 96.6 Q61.8 101.4 60 102.4 Q58.2 101.4 56.8 96.6 Z"
+                              fill="#ff8fb5"/>
+
+                        <!-- приоткрытый ротик -->
+                        <path d="M55 106.6 Q60 112.4 65 106.6 Z" fill="#e07f9f" opacity=".92"/>
+                        <path d="M55 106.6 Q60 112.4 65 106.6" stroke="#c8a3b7" stroke-width="1.4"
+                              stroke-linecap="round" fill="none"/>
+                    </svg>
+                </span>
+
+                <span class="notes" aria-hidden="true"><i>♪</i><i>♫</i><i>♪</i></span>
+
+                <span class="label">
+                    <span class="state-icon" aria-hidden="true">
+                        <svg class="ico-play" viewBox="0 0 12 12"><path d="M3 1.4 L10.2 6 L3 10.6 Z"/></svg>
+                        <svg class="ico-pause" viewBox="0 0 12 12">
+                            <rect x="2.4" y="1.6" width="2.7" height="8.8" rx="1.1"/>
+                            <rect x="6.9" y="1.6" width="2.7" height="8.8" rx="1.1"/>
+                        </svg>
+                    </span>
+                    <span class="label-text">Диалог</span>
+                </span>
+            </button>
+        </div>
+
+    </div>
+</main>
+
+<audio id="audio1" src="1.mp3" preload="metadata" playsinline webkit-playsinline></audio>
+<audio id="audio2" src="2.mp3" preload="metadata" playsinline webkit-playsinline></audio>
+
+<script>
+(function () {
+    'use strict';
+
+    /* =========================================================
+       1. ЗВЁЗДНОЕ НЕБО
+       ========================================================= */
+    (function initStars() {
+        const canvas = document.getElementById('stars');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        let W = 0, H = 0, raf = null, t = 0;
+        let stars = [];
+
+        function build() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            W = canvas.clientWidth;
+            H = canvas.clientHeight;
+
+            canvas.width  = Math.max(1, Math.round(W * dpr));
+            canvas.height = Math.max(1, Math.round(H * dpr));
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const count = Math.min(230, Math.round((W * H) / 10500));
+            stars = new Array(count);
+
+            for (let i = 0; i < count; i++) {
+                stars[i] = {
+                    x: Math.random() * W,
+                    y: Math.random() * H,
+                    r: Math.pow(Math.random(), 2) * 1.7 + 0.25,
+                    a: 0.25 + Math.random() * 0.75,
+                    ph: Math.random() * Math.PI * 2,
+                    sp: 0.25 + Math.random() * 0.95,
+                    vy: -(0.015 + Math.random() * 0.055),
+                    warm: Math.random() < 0.22
+                };
             }
+        }
 
-            function resetOtherAudio(except) {
-                [audio1, audio2].forEach(a => {
-                    if (a !== except) {
-                        a.pause();
-                        a.currentTime = 0;
-                    }
-                });
-                [btn1, btn2].forEach(b => {
-                    const own = b === btn1 ? audio1 : audio2;
-                    if (own !== except) b.classList.remove('playing');
-                });
-            }
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
 
-            function playOrPause(audio, btn) {
-                unlockAudio();
+            for (let i = 0; i < stars.length; i++) {
+                const s = stars[i];
 
-                if (audio.paused) {
-                    resetOtherAudio(audio);
-                    if (audio.readyState === 0) audio.load();
-                    const p = audio.play();
-                    if (p && p.then) {
-                        p.then(() => btn.classList.add('playing'))
-                         .catch(err => {
-                             console.warn('Не удалось воспроизвести:', err);
-                             btn.classList.remove('playing');
-                         });
-                    } else {
-                        btn.classList.add('playing');
-                    }
-                } else {
-                    audio.pause();
-                    btn.classList.remove('playing');
+                const twinkle = 0.55 + 0.45 * Math.sin(t * s.sp + s.ph);
+                const alpha = s.a * twinkle;
+
+                s.y += s.vy;
+                if (s.y < -6) {
+                    s.y = H + 6;
+                    s.x = Math.random() * W;
+                }
+
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fillStyle = s.warm
+                    ? 'rgba(255, 226, 202, ' + alpha.toFixed(3) + ')'
+                    : 'rgba(214, 224, 255, ' + alpha.toFixed(3) + ')';
+                ctx.fill();
+
+                if (s.r > 1.15) {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, s.r * 3.4, 0, Math.PI * 2);
+                    ctx.fillStyle = s.warm
+                        ? 'rgba(255, 208, 168, ' + (alpha * 0.09).toFixed(3) + ')'
+                        : 'rgba(176, 198, 255, ' + (alpha * 0.09).toFixed(3) + ')';
+                    ctx.fill();
                 }
             }
+        }
 
-            // Только click — надёжно работает на iOS для <button>
-            btn1.addEventListener('click', () => playOrPause(audio1, btn1));
-            btn2.addEventListener('click', () => playOrPause(audio2, btn2));
+        function loop() {
+            t += 0.016;
+            draw();
+            raf = requestAnimationFrame(loop);
+        }
 
-            // Разблокировка отдельно, без переключения play/pause
-            btn1.addEventListener('touchend', unlockAudio, { passive: true });
-            btn2.addEventListener('touchend', unlockAudio, { passive: true });
+        function start() {
+            if (raf === null && !reduceMotion) loop();
+        }
+        function stop() {
+            if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+        }
 
-            // Сброс состояния кнопок
-            [audio1, audio2].forEach((audio, i) => {
-                const btn = i === 0 ? btn1 : btn2;
-                audio.addEventListener('ended', () => btn.classList.remove('playing'));
-                audio.addEventListener('pause', () => {
-                    if (audio.currentTime === 0 || audio.ended) {
-                        btn.classList.remove('playing');
-                    }
-                });
-                audio.addEventListener('error', () => {
-                    console.error('Ошибка загрузки аудио ' + (i + 1), audio.error);
-                    btn.classList.remove('playing');
-                });
+        build();
+
+        if (reduceMotion) {
+            draw();
+        } else {
+            start();
+        }
+
+        let resizeTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                build();
+                if (reduceMotion) draw();
+            }, 160);
+        }, { passive: true });
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) stop();
+            else start();
+        });
+    })();
+
+
+    /* =========================================================
+       2. АУДИО
+       ========================================================= */
+    const audio1 = document.getElementById('audio1');
+    const audio2 = document.getElementById('audio2');
+    const btn1   = document.getElementById('btn1');
+    const btn2   = document.getElementById('btn2');
+
+    const pairs = [
+        { audio: audio1, btn: btn1 },
+        { audio: audio2, btn: btn2 }
+    ];
+
+    /* --- разблокировка аудио на iOS (только в первом касании) --- */
+    let unlocked = false;
+    function unlockAudio() {
+        if (unlocked) return;
+        unlocked = true;
+
+        pairs.forEach(function (p) {
+            try {
+                p.audio.load();
+                const promise = p.audio.play();
+                if (promise && typeof promise.then === 'function') {
+                    promise.then(function () {
+                        p.audio.pause();
+                        p.audio.currentTime = 0;
+                    }).catch(function () {});
+                } else {
+                    p.audio.pause();
+                    p.audio.currentTime = 0;
+                }
+            } catch (e) { /* игнорируем */ }
+        });
+    }
+
+    /* --- приглушение неактивной карточки --- */
+    function updateDim(activeBtn) {
+        pairs.forEach(function (p) {
+            p.btn.classList.toggle('is-dimmed', activeBtn !== null && p.btn !== activeBtn);
+        });
+    }
+
+    /* --- основной обработчик --- */
+    function playOrPause(audio, btn) {
+        unlockAudio();
+
+        if (audio.paused) {
+            // останавливаем второй трек
+            pairs.forEach(function (p) {
+                if (p.audio !== audio) {
+                    p.audio.pause();
+                    p.audio.currentTime = 0;
+                    p.btn.classList.remove('playing');
+                }
             });
-        })();
-    </script>
+
+            if (audio.readyState === 0) audio.load();
+
+            const promise = audio.play();
+
+            if (promise && typeof promise.then === 'function') {
+                promise.then(function () {
+                    btn.classList.add('playing');
+                    updateDim(btn);
+                }).catch(function (err) {
+                    console.warn('Не удалось воспроизвести:', err);
+                    btn.classList.remove('playing');
+                    updateDim(null);
+                });
+            } else {
+                btn.classList.add('playing');
+                updateDim(btn);
+            }
+        } else {
+            audio.pause();
+            btn.classList.remove('playing');
+            updateDim(null);
+        }
+    }
+
+    btn1.addEventListener('click', function () { playOrPause(audio1, btn1); });
+    btn2.addEventListener('click', function () { playOrPause(audio2, btn2); });
+
+    // разблокировка отдельно, без переключения play/pause
+    btn1.addEventListener('touchend', unlockAudio, { passive: true });
+    btn2.addEventListener('touchend', unlockAudio, { passive: true });
+
+    /* --- синхронизация визуального состояния --- */
+    pairs.forEach(function (p) {
+        p.audio.addEventListener('ended', function () {
+            p.btn.classList.remove('playing');
+            updateDim(null);
+        });
+
+        p.audio.addEventListener('pause', function () {
+            if (p.audio.currentTime === 0 || p.audio.ended) {
+                p.btn.classList.remove('playing');
+                updateDim(null);
+            }
+        });
+
+        p.audio.addEventListener('error', function () {
+            console.error('Ошибка загрузки аудио:', p.audio.error);
+            p.btn.classList.remove('playing');
+            updateDim(null);
+        });
+    });
+})();
+</script>
 </body>
 </html>
