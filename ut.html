@@ -2,100 +2,83 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Озвучка для утренника</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+        html, body {
+            height: 100%;
             background: #0a0a0a;
             color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
             -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        #canvas-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
-
-        /* Кнопки друг над другом по центру */
-        .controls {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            z-index: 10;
-            pointer-events: none;
-            align-items: center;
-        }
-
-        .audio-btn {
-            pointer-events: auto;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: rgba(255, 255, 255, 0.95);
+        body {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            gap: 28px;
+            padding: 24px;
+        }
+
+        .audio-btn {
+            width: min(70vw, 260px);
+            height: min(70vw, 260px);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.15s ease, background 0.25s ease, border-color 0.25s ease;
             outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .audio-btn:hover {
-            background: rgba(255, 255, 255, 0.09);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: scale(1.03);
+        .audio-btn:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.12);
         }
-
-        .audio-btn:active { transform: scale(0.98); }
 
         .audio-btn .icon {
-            font-size: 38px;
+            font-size: 44px;
             line-height: 1;
-            opacity: 0.9;
         }
 
         .audio-btn .subtitle {
-            font-size: 12px;
-            letter-spacing: 1px;
-            opacity: 0.55;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
             text-align: center;
-            padding: 0 10px;
-            line-height: 1.3;
+            padding: 0 16px;
         }
 
         .audio-btn.playing {
             background: rgba(255, 255, 255, 0.14);
-            border-color: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.55);
         }
 
         .audio-btn.playing .subtitle { opacity: 1; }
 
         .audio-btn .dot {
-            position: absolute;
-            bottom: 30px;
-            width: 6px;
-            height: 6px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: #fff;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.2s ease;
         }
 
         .audio-btn.playing .dot {
@@ -105,310 +88,127 @@
 
         @keyframes dotPulse {
             0%, 100% { opacity: 0.4; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.4); }
-        }
-
-        .toggle-animation {
-            position: fixed;
-            bottom: 36px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            padding: 12px 26px;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-            border-radius: 100px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            color: rgba(255, 255, 255, 0.65);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            outline: none;
-        }
-
-        .toggle-animation:hover {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.95);
-            border-color: rgba(255, 255, 255, 0.25);
-        }
-
-        .toggle-animation.off {
-            color: rgba(255, 130, 130, 0.85);
-            border-color: rgba(255, 130, 130, 0.25);
-        }
-
-        @media (max-width: 600px) {
-            .audio-btn { width: 140px; height: 140px; }
-            .audio-btn .icon { font-size: 30px; }
-            .audio-btn .subtitle { font-size: 11px; }
-            .controls { gap: 18px; }
-            .toggle-animation { bottom: 20px; font-size: 12px; padding: 10px 20px; }
-        }
-
-        @media (max-height: 640px) {
-            .audio-btn { width: 120px; height: 120px; }
-            .audio-btn .icon { font-size: 26px; }
-            .controls { gap: 14px; }
+            50%      { opacity: 1;   transform: scale(1.4); }
         }
     </style>
 </head>
 <body>
-    <div id="canvas-container"></div>
+    <button class="audio-btn" id="btn1" type="button">
+        <span class="icon">▶</span>
+        <span class="subtitle">Озвучка 1</span>
+        <span class="dot"></span>
+    </button>
 
-    <div class="controls">
-        <button class="audio-btn" id="btn1">
-            <span class="icon">▶</span>
-            <span class="subtitle">Озвучка 1</span>
-            <span class="dot"></span>
-        </button>
-        <button class="audio-btn" id="btn2">
-            <span class="icon">▶</span>
-            <span class="subtitle">Озвучка 2</span>
-            <span class="dot"></span>
-        </button>
-    </div>
+    <button class="audio-btn" id="btn2" type="button">
+        <span class="icon">▶</span>
+        <span class="subtitle">Озвучка 2</span>
+        <span class="dot"></span>
+    </button>
 
-    <button class="toggle-animation" id="toggleAnim">Отключить анимацию</button>
+    <!-- Атрибуты для iOS: playsinline, webkit-playsinline; preload=metadata -->
+    <audio id="audio1" src="1.mp3" preload="metadata" playsinline webkit-playsinline></audio>
+    <audio id="audio2" src="2.mp3" preload="metadata" playsinline webkit-playsinline></audio>
 
-    <!-- Относительные ссылки: файлы должны лежать рядом с index.html в корне репозитория -->
-    <audio id="audio1" src="1.mp3" preload="auto"></audio>
-    <audio id="audio2" src="2.mp3" preload="auto"></audio>
+    <script>
+        (function () {
+            const audio1 = document.getElementById('audio1');
+            const audio2 = document.getElementById('audio2');
+            const btn1   = document.getElementById('btn1');
+            const btn2   = document.getElementById('btn2');
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+            // Разблокировка аудио на iOS: один "тихий" play/pause в первом жесте
+            let unlocked = false;
+            function unlockAudio() {
+                if (unlocked) return;
+                unlocked = true;
+                [audio1, audio2].forEach(a => {
+                    try {
+                        a.load();
+                        const p = a.play();
+                        if (p && p.then) {
+                            p.then(() => { a.pause(); a.currentTime = 0; })
+                             .catch(() => { a.pause(); a.currentTime = 0; });
+                        } else {
+                            a.pause(); a.currentTime = 0;
+                        }
+                    } catch (e) { /* тихо игнорируем */ }
+                });
             }
-        }
-    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
+            function resetOtherAudio(except) {
+                [audio1, audio2].forEach(a => {
+                    if (a !== except) {
+                        a.pause();
+                        a.currentTime = 0;
+                    }
+                });
+                [btn1, btn2].forEach(b => {
+                    const own = b === btn1 ? audio1 : audio2;
+                    if (own !== except) b.classList.remove('playing');
+                });
+            }
 
-        // ============================================
-        // АУДИО ЛОГИКА
-        // ============================================
-        const audio1 = document.getElementById('audio1');
-        const audio2 = document.getElementById('audio2');
-        const btn1 = document.getElementById('btn1');
-        const btn2 = document.getElementById('btn2');
+            function playOrPause(audio, btn) {
+                // Жест пользователя — разблокируем звук
+                unlockAudio();
 
-        function resetOtherAudio(except) {
-            [audio1, audio2].forEach(audio => {
-                if (audio !== except) {
+                if (audio.paused) {
+                    resetOtherAudio(audio);
+                    // iOS иногда требует load() перед первым play()
+                    if (audio.readyState === 0) audio.load();
+                    const playPromise = audio.play();
+                    if (playPromise && playPromise.then) {
+                        playPromise
+                            .then(() => btn.classList.add('playing'))
+                            .catch(err => {
+                                console.warn('Не удалось воспроизвести:', err);
+                                btn.classList.remove('playing');
+                            });
+                    } else {
+                        btn.classList.add('playing');
+                    }
+                } else {
                     audio.pause();
-                    audio.currentTime = 0;
-                }
-            });
-            [btn1, btn2].forEach(btn => {
-                const ownAudio = btn === btn1 ? audio1 : audio2;
-                if (ownAudio !== except) btn.classList.remove('playing');
-            });
-        }
-
-        function toggleAudio(audio, btn) {
-            if (audio.paused) {
-                resetOtherAudio(audio);
-                audio.play().catch(err => console.warn('Ошибка воспроизведения:', err));
-                btn.classList.add('playing');
-            } else {
-                audio.pause();
-                btn.classList.remove('playing');
-            }
-        }
-
-        btn1.addEventListener('click', () => toggleAudio(audio1, btn1));
-        btn2.addEventListener('click', () => toggleAudio(audio2, btn2));
-
-        [audio1, audio2].forEach((audio, i) => {
-            const btn = i === 0 ? btn1 : btn2;
-            audio.addEventListener('ended', () => btn.classList.remove('playing'));
-            audio.addEventListener('pause', () => {
-                if (audio.currentTime === 0 || audio.ended) btn.classList.remove('playing');
-            });
-        });
-
-        // ============================================
-        // THREE.JS — спокойная минималистичная анимация
-        // ============================================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a0a);
-        scene.fog = new THREE.Fog(0x0a0a0a, 10, 25);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 12);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(ambientLight);
-
-        const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        keyLight.position.set(5, 5, 5);
-        scene.add(keyLight);
-
-        const accentLight1 = new THREE.PointLight(0xffffff, 1.5, 20);
-        accentLight1.position.set(-4, 0, 3);
-        scene.add(accentLight1);
-
-        const accentLight2 = new THREE.PointLight(0xffffff, 1.5, 20);
-        accentLight2.position.set(4, 0, 3);
-        scene.add(accentLight2);
-
-        const world = new THREE.Group();
-        scene.add(world);
-
-        // Центральный тонкий тор
-        const torus = new THREE.Mesh(
-            new THREE.TorusGeometry(1.8, 0.04, 16, 120),
-            new THREE.MeshStandardMaterial({
-                color: 0xffffff, emissive: 0x333333,
-                roughness: 0.3, metalness: 0.8,
-                transparent: true, opacity: 0.9
-            })
-        );
-        torus.rotation.x = Math.PI / 2.5;
-        world.add(torus);
-
-        // Второй тор поменьше
-        const torus2 = new THREE.Mesh(
-            new THREE.TorusGeometry(1.4, 0.02, 16, 100),
-            new THREE.MeshStandardMaterial({
-                color: 0xffffff, emissive: 0x222222,
-                roughness: 0.4, metalness: 0.6,
-                transparent: true, opacity: 0.5
-            })
-        );
-        torus2.rotation.x = Math.PI / 3;
-        torus2.rotation.y = 0.5;
-        world.add(torus2);
-
-        // Орбита из маленьких сфер
-        const orbitGroup = new THREE.Group();
-        const sphereGeo = new THREE.SphereGeometry(0.06, 12, 12);
-        const sphereMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff, emissive: 0x666666,
-            roughness: 0.2, metalness: 0.9
-        });
-        const orbitCount = 16;
-        for (let i = 0; i < orbitCount; i++) {
-            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-            const angle = (i / orbitCount) * Math.PI * 2;
-            sphere.position.set(Math.cos(angle) * 2.6, 0, Math.sin(angle) * 2.6);
-            orbitGroup.add(sphere);
-        }
-        orbitGroup.rotation.x = Math.PI / 2.8;
-        world.add(orbitGroup);
-
-        // Частицы
-        const particleCount = 200;
-        const positions = new Float32Array(particleCount * 3);
-        const velocities = [];
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3]     = (Math.random() - 0.5) * 40;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 25;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 20 - 5;
-            velocities.push({
-                x: (Math.random() - 0.5) * 0.005,
-                y: (Math.random() - 0.5) * 0.005,
-                z: (Math.random() - 0.5) * 0.005
-            });
-        }
-        const particleGeo = new THREE.BufferGeometry();
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particles = new THREE.Points(particleGeo, new THREE.PointsMaterial({
-            color: 0xffffff, size: 0.05, transparent: true, opacity: 0.4, sizeAttenuation: true
-        }));
-        scene.add(particles);
-
-        // Яркое ядро
-        const core = new THREE.Mesh(
-            new THREE.SphereGeometry(0.15, 16, 16),
-            new THREE.MeshBasicMaterial({ color: 0xffffff })
-        );
-        world.add(core);
-
-        // ============================================
-        // АНИМАЦИЯ
-        // ============================================
-        let time = 0;
-        let animationEnabled = true;
-        let animationFrameId = null;
-
-        const toggleBtn = document.getElementById('toggleAnim');
-
-        toggleBtn.addEventListener('click', () => {
-            animationEnabled = !animationEnabled;
-            if (animationEnabled) {
-                toggleBtn.textContent = 'Отключить анимацию';
-                toggleBtn.classList.remove('off');
-                if (!animationFrameId) animate();
-            } else {
-                toggleBtn.textContent = 'Включить анимацию';
-                toggleBtn.classList.add('off');
-                if (animationFrameId) {
-                    cancelAnimationFrame(animationFrameId);
-                    animationFrameId = null;
+                    btn.classList.remove('playing');
                 }
             }
-        });
 
-        function animate() {
-            if (!animationEnabled) return;
-            animationFrameId = requestAnimationFrame(animate);
+            // Обработчики: и click, и touchend — чтобы iOS точно поймал жест
+            function bindButton(btn, audio) {
+                let touched = false;
 
-            time += 0.008;
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    touched = true;
+                    playOrPause(audio, btn);
+                    setTimeout(() => { touched = false; }, 400);
+                }, { passive: false });
 
-            torus.rotation.z  += 0.003;
-            torus.rotation.y  += 0.0015;
-            torus2.rotation.z -= 0.002;
-            torus2.rotation.y += 0.002;
-
-            torus.scale.setScalar(1 + Math.sin(time * 2) * 0.03);
-
-            orbitGroup.rotation.y += 0.004;
-            orbitGroup.rotation.z += 0.001;
-            orbitGroup.children.forEach((s, i) => {
-                s.scale.setScalar(1 + Math.sin(time * 3 + i) * 0.3);
-            });
-
-            core.scale.setScalar(1 + Math.sin(time * 4) * 0.5);
-            core.material.color.setHSL(0, 0, 0.7 + Math.sin(time * 4) * 0.3);
-
-            const pos = particles.geometry.attributes.position.array;
-            for (let i = 0; i < particleCount; i++) {
-                pos[i * 3]     += velocities[i].x;
-                pos[i * 3 + 1] += velocities[i].y;
-                pos[i * 3 + 2] += velocities[i].z;
-                if (Math.abs(pos[i * 3]) > 20) velocities[i].x *= -1;
-                if (Math.abs(pos[i * 3 + 1]) > 12) velocities[i].y *= -1;
-                if (Math.abs(pos[i * 3 + 2] + 5) > 10) velocities[i].z *= -1;
+                btn.addEventListener('click', (e) => {
+                    // Если touchend уже обработал — не дублируем
+                    if (touched) return;
+                    playOrPause(audio, btn);
+                });
             }
-            particles.geometry.attributes.position.needsUpdate = true;
 
-            camera.position.x = Math.sin(time * 0.3) * 0.5;
-            camera.position.y = Math.cos(time * 0.25) * 0.3;
-            camera.lookAt(0, 0, 0);
+            bindButton(btn1, audio1);
+            bindButton(btn2, audio2);
 
-            accentLight1.color.setHSL(0.6 + Math.sin(time * 0.2) * 0.1, 0.3, 0.7);
-            accentLight2.color.setHSL(0.0 + Math.sin(time * 0.2 + 1) * 0.1, 0.3, 0.7);
-
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate();
+            // Сброс состояния кнопок
+            [audio1, audio2].forEach((audio, i) => {
+                const btn = i === 0 ? btn1 : btn2;
+                audio.addEventListener('ended', () => btn.classList.remove('playing'));
+                audio.addEventListener('pause', () => {
+                    if (audio.currentTime === 0 || audio.ended) {
+                        btn.classList.remove('playing');
+                    }
+                });
+                audio.addEventListener('error', (e) => {
+                    console.error('Ошибка загрузки аудио ' + (i + 1) + ':', audio.error);
+                    btn.classList.remove('playing');
+                });
+            });
+        })();
     </script>
 </body>
 </html>
