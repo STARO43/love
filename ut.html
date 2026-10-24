@@ -3,13 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Player</title>
+    <title>Озвучка для утренника</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             overflow: hidden;
@@ -21,90 +17,79 @@
 
         #canvas-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 1;
         }
 
-        /* Центральный контейнер с кнопками */
+        /* Кнопки друг над другом по центру */
         .controls {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             display: flex;
-            gap: 32px;
+            flex-direction: column;
+            gap: 24px;
             z-index: 10;
             pointer-events: none;
+            align-items: center;
         }
 
-        /* Минималистичная кнопка воспроизведения */
         .audio-btn {
             pointer-events: auto;
-            width: 160px;
-            height: 160px;
+            width: 180px;
+            height: 180px;
             border-radius: 50%;
             border: 1px solid rgba(255, 255, 255, 0.15);
             cursor: pointer;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 15px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             outline: none;
         }
 
         .audio-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.09);
             border-color: rgba(255, 255, 255, 0.3);
             transform: scale(1.03);
         }
 
-        .audio-btn:active {
-            transform: scale(0.98);
-        }
+        .audio-btn:active { transform: scale(0.98); }
 
-        /* Иконка внутри кнопки */
         .audio-btn .icon {
-            font-size: 32px;
+            font-size: 38px;
             line-height: 1;
             opacity: 0.9;
-            transition: opacity 0.3s ease;
         }
 
-        .audio-btn .label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            opacity: 0.5;
-            transition: opacity 0.3s ease;
+        .audio-btn .subtitle {
+            font-size: 12px;
+            letter-spacing: 1px;
+            opacity: 0.55;
+            text-align: center;
+            padding: 0 10px;
+            line-height: 1.3;
         }
 
-        /* Состояние "играет" */
         .audio-btn.playing {
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.14);
             border-color: rgba(255, 255, 255, 0.5);
         }
 
-        .audio-btn.playing .label {
-            opacity: 1;
-        }
+        .audio-btn.playing .subtitle { opacity: 1; }
 
-        /* Индикатор воспроизведения (пульсирующая точка) */
         .audio-btn .dot {
             position: absolute;
-            bottom: 28px;
+            bottom: 30px;
             width: 6px;
             height: 6px;
             border-radius: 50%;
@@ -123,25 +108,22 @@
             50% { opacity: 1; transform: scale(1.4); }
         }
 
-        /* Кнопка отключения анимации */
         .toggle-animation {
             position: fixed;
-            bottom: 40px;
+            bottom: 36px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 20;
-            padding: 12px 24px;
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
+            padding: 12px 26px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
             border-radius: 100px;
             border: 1px solid rgba(255, 255, 255, 0.12);
             cursor: pointer;
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(255, 255, 255, 0.65);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             outline: none;
         }
@@ -153,32 +135,22 @@
         }
 
         .toggle-animation.off {
-            color: rgba(255, 120, 120, 0.8);
-            border-color: rgba(255, 120, 120, 0.2);
+            color: rgba(255, 130, 130, 0.85);
+            border-color: rgba(255, 130, 130, 0.25);
         }
 
-        .toggle-animation.off:hover {
-            color: rgba(255, 150, 150, 1);
-            border-color: rgba(255, 120, 120, 0.4);
-        }
-
-        /* Адаптивность */
         @media (max-width: 600px) {
-            .audio-btn {
-                width: 120px;
-                height: 120px;
-            }
-            .audio-btn .icon {
-                font-size: 24px;
-            }
-            .controls {
-                gap: 20px;
-            }
-            .toggle-animation {
-                bottom: 24px;
-                font-size: 10px;
-                padding: 10px 18px;
-            }
+            .audio-btn { width: 140px; height: 140px; }
+            .audio-btn .icon { font-size: 30px; }
+            .audio-btn .subtitle { font-size: 11px; }
+            .controls { gap: 18px; }
+            .toggle-animation { bottom: 20px; font-size: 12px; padding: 10px 20px; }
+        }
+
+        @media (max-height: 640px) {
+            .audio-btn { width: 120px; height: 120px; }
+            .audio-btn .icon { font-size: 26px; }
+            .controls { gap: 14px; }
         }
     </style>
 </head>
@@ -188,20 +160,21 @@
     <div class="controls">
         <button class="audio-btn" id="btn1">
             <span class="icon">▶</span>
-            <span class="label">Track 1</span>
+            <span class="subtitle">Озвучка 1</span>
             <span class="dot"></span>
         </button>
         <button class="audio-btn" id="btn2">
             <span class="icon">▶</span>
-            <span class="label">Track 2</span>
+            <span class="subtitle">Озвучка 2</span>
             <span class="dot"></span>
         </button>
     </div>
 
     <button class="toggle-animation" id="toggleAnim">Отключить анимацию</button>
 
-    <audio id="audio1" src="https://raw.githubusercontent.com/STARO43/love/main/1.mp3" preload="auto"></audio>
-    <audio id="audio2" src="https://raw.githubusercontent.com/STARO43/love/main/2.mp3" preload="auto"></audio>
+    <!-- Относительные ссылки: файлы должны лежать рядом с index.html в корне репозитория -->
+    <audio id="audio1" src="1.mp3" preload="auto"></audio>
+    <audio id="audio2" src="2.mp3" preload="auto"></audio>
 
     <script type="importmap">
         {
@@ -230,9 +203,8 @@
                 }
             });
             [btn1, btn2].forEach(btn => {
-                if (btn !== (except === audio1 ? btn1 : btn2)) {
-                    btn.classList.remove('playing');
-                }
+                const ownAudio = btn === btn1 ? audio1 : audio2;
+                if (ownAudio !== except) btn.classList.remove('playing');
             });
         }
 
@@ -250,19 +222,16 @@
         btn1.addEventListener('click', () => toggleAudio(audio1, btn1));
         btn2.addEventListener('click', () => toggleAudio(audio2, btn2));
 
-        // Сброс состояния кнопок при окончании/паузе
         [audio1, audio2].forEach((audio, i) => {
             const btn = i === 0 ? btn1 : btn2;
             audio.addEventListener('ended', () => btn.classList.remove('playing'));
             audio.addEventListener('pause', () => {
-                if (audio.currentTime === 0 || audio.ended) {
-                    btn.classList.remove('playing');
-                }
+                if (audio.currentTime === 0 || audio.ended) btn.classList.remove('playing');
             });
         });
 
         // ============================================
-        // THREE.JS — МИНИМАЛИСТИЧНАЯ АНИМАЦИЯ
+        // THREE.JS — спокойная минималистичная анимация
         // ============================================
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -277,7 +246,6 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Освещение — мягкое, без резких теней
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
         scene.add(ambientLight);
 
@@ -293,68 +261,57 @@
         accentLight2.position.set(4, 0, 3);
         scene.add(accentLight2);
 
-        // Группа для всех объектов
         const world = new THREE.Group();
         scene.add(world);
 
-        // --- Центральный тор (главный объект) ---
-        const torusGeo = new THREE.TorusGeometry(1.8, 0.04, 16, 120);
-        const torusMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0x333333,
-            roughness: 0.3,
-            metalness: 0.8,
-            transparent: true,
-            opacity: 0.9
-        });
-        const torus = new THREE.Mesh(torusGeo, torusMat);
+        // Центральный тонкий тор
+        const torus = new THREE.Mesh(
+            new THREE.TorusGeometry(1.8, 0.04, 16, 120),
+            new THREE.MeshStandardMaterial({
+                color: 0xffffff, emissive: 0x333333,
+                roughness: 0.3, metalness: 0.8,
+                transparent: true, opacity: 0.9
+            })
+        );
         torus.rotation.x = Math.PI / 2.5;
         world.add(torus);
 
-        // --- Второй тор поменьше ---
-        const torus2Geo = new THREE.TorusGeometry(1.4, 0.02, 16, 100);
-        const torus2Mat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0x222222,
-            roughness: 0.4,
-            metalness: 0.6,
-            transparent: true,
-            opacity: 0.5
-        });
-        const torus2 = new THREE.Mesh(torus2Geo, torus2Mat);
+        // Второй тор поменьше
+        const torus2 = new THREE.Mesh(
+            new THREE.TorusGeometry(1.4, 0.02, 16, 100),
+            new THREE.MeshStandardMaterial({
+                color: 0xffffff, emissive: 0x222222,
+                roughness: 0.4, metalness: 0.6,
+                transparent: true, opacity: 0.5
+            })
+        );
         torus2.rotation.x = Math.PI / 3;
         torus2.rotation.y = 0.5;
         world.add(torus2);
 
-        // --- Орбита из маленьких сфер ---
+        // Орбита из маленьких сфер
         const orbitGroup = new THREE.Group();
         const sphereGeo = new THREE.SphereGeometry(0.06, 12, 12);
         const sphereMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0x666666,
-            roughness: 0.2,
-            metalness: 0.9
+            color: 0xffffff, emissive: 0x666666,
+            roughness: 0.2, metalness: 0.9
         });
-
         const orbitCount = 16;
         for (let i = 0; i < orbitCount; i++) {
             const sphere = new THREE.Mesh(sphereGeo, sphereMat);
             const angle = (i / orbitCount) * Math.PI * 2;
             sphere.position.set(Math.cos(angle) * 2.6, 0, Math.sin(angle) * 2.6);
-            sphere.userData = { angle, radius: 2.6 };
             orbitGroup.add(sphere);
         }
         orbitGroup.rotation.x = Math.PI / 2.8;
         world.add(orbitGroup);
 
-        // --- Медленно плывущие частицы на фоне ---
+        // Частицы
         const particleCount = 200;
-        const particleGeo = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const velocities = [];
-
         for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 40;
+            positions[i * 3]     = (Math.random() - 0.5) * 40;
             positions[i * 3 + 1] = (Math.random() - 0.5) * 25;
             positions[i * 3 + 2] = (Math.random() - 0.5) * 20 - 5;
             velocities.push({
@@ -363,24 +320,18 @@
                 z: (Math.random() - 0.5) * 0.005
             });
         }
-
+        const particleGeo = new THREE.BufferGeometry();
         particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-        const particleMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.05,
-            transparent: true,
-            opacity: 0.4,
-            sizeAttenuation: true
-        });
-
-        const particles = new THREE.Points(particleGeo, particleMat);
+        const particles = new THREE.Points(particleGeo, new THREE.PointsMaterial({
+            color: 0xffffff, size: 0.05, transparent: true, opacity: 0.4, sizeAttenuation: true
+        }));
         scene.add(particles);
 
-        // --- Внутреннее свечение (маленькая яркая сфера в центре) ---
-        const coreGeo = new THREE.SphereGeometry(0.15, 16, 16);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const core = new THREE.Mesh(coreGeo, coreMat);
+        // Яркое ядро
+        const core = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
         world.add(core);
 
         // ============================================
@@ -414,63 +365,49 @@
 
             time += 0.008;
 
-            // Вращение торов
-            torus.rotation.z += 0.003;
-            torus.rotation.y += 0.0015;
-
+            torus.rotation.z  += 0.003;
+            torus.rotation.y  += 0.0015;
             torus2.rotation.z -= 0.002;
             torus2.rotation.y += 0.002;
 
-            // Пульсация центрального тора
-            const pulse = 1 + Math.sin(time * 2) * 0.03;
-            torus.scale.setScalar(pulse);
+            torus.scale.setScalar(1 + Math.sin(time * 2) * 0.03);
 
-            // Вращение орбиты + пульсация сфер
             orbitGroup.rotation.y += 0.004;
             orbitGroup.rotation.z += 0.001;
-            orbitGroup.children.forEach((sphere, i) => {
-                const s = 1 + Math.sin(time * 3 + i) * 0.3;
-                sphere.scale.setScalar(s);
+            orbitGroup.children.forEach((s, i) => {
+                s.scale.setScalar(1 + Math.sin(time * 3 + i) * 0.3);
             });
 
-            // Пульсация ядра
             core.scale.setScalar(1 + Math.sin(time * 4) * 0.5);
             core.material.color.setHSL(0, 0, 0.7 + Math.sin(time * 4) * 0.3);
 
-            // Движение частиц
-            const positions = particles.geometry.attributes.position.array;
+            const pos = particles.geometry.attributes.position.array;
             for (let i = 0; i < particleCount; i++) {
-                positions[i * 3] += velocities[i].x;
-                positions[i * 3 + 1] += velocities[i].y;
-                positions[i * 3 + 2] += velocities[i].z;
-
-                // Сброс при выходе за границы
-                if (Math.abs(positions[i * 3]) > 20) velocities[i].x *= -1;
-                if (Math.abs(positions[i * 3 + 1]) > 12) velocities[i].y *= -1;
-                if (Math.abs(positions[i * 3 + 2] + 5) > 10) velocities[i].z *= -1;
+                pos[i * 3]     += velocities[i].x;
+                pos[i * 3 + 1] += velocities[i].y;
+                pos[i * 3 + 2] += velocities[i].z;
+                if (Math.abs(pos[i * 3]) > 20) velocities[i].x *= -1;
+                if (Math.abs(pos[i * 3 + 1]) > 12) velocities[i].y *= -1;
+                if (Math.abs(pos[i * 3 + 2] + 5) > 10) velocities[i].z *= -1;
             }
             particles.geometry.attributes.position.needsUpdate = true;
 
-            // Лёгкое движение камеры
             camera.position.x = Math.sin(time * 0.3) * 0.5;
             camera.position.y = Math.cos(time * 0.25) * 0.3;
             camera.lookAt(0, 0, 0);
 
-            // Медленная смена цвета источников света (очень тонкая)
             accentLight1.color.setHSL(0.6 + Math.sin(time * 0.2) * 0.1, 0.3, 0.7);
             accentLight2.color.setHSL(0.0 + Math.sin(time * 0.2 + 1) * 0.1, 0.3, 0.7);
 
             renderer.render(scene, camera);
         }
 
-        // Обработка ресайза
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Старт
         animate();
     </script>
 </body>
