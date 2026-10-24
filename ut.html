@@ -90,6 +90,13 @@
             0%, 100% { opacity: 0.4; transform: scale(1); }
             50%      { opacity: 1;   transform: scale(1.4); }
         }
+
+        @media (max-height: 700px) {
+            .audio-btn { width: min(50vw, 160px); height: min(50vw, 160px); }
+            .audio-btn .icon { font-size: 32px; }
+            .audio-btn .subtitle { font-size: 12px; }
+            body { gap: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -105,7 +112,6 @@
         <span class="dot"></span>
     </button>
 
-    <!-- Атрибуты для iOS: playsinline, webkit-playsinline; preload=metadata -->
     <audio id="audio1" src="1.mp3" preload="metadata" playsinline webkit-playsinline></audio>
     <audio id="audio2" src="2.mp3" preload="metadata" playsinline webkit-playsinline></audio>
 
@@ -116,7 +122,7 @@
             const btn1   = document.getElementById('btn1');
             const btn2   = document.getElementById('btn2');
 
-            // Разблокировка аудио на iOS: один "тихий" play/pause в первом жесте
+            // Разблокировка аудио на iOS — только в первом касании
             let unlocked = false;
             function unlockAudio() {
                 if (unlocked) return;
@@ -127,11 +133,11 @@
                         const p = a.play();
                         if (p && p.then) {
                             p.then(() => { a.pause(); a.currentTime = 0; })
-                             .catch(() => { a.pause(); a.currentTime = 0; });
+                             .catch(() => {});
                         } else {
                             a.pause(); a.currentTime = 0;
                         }
-                    } catch (e) { /* тихо игнорируем */ }
+                    } catch (e) {}
                 });
             }
 
@@ -149,21 +155,18 @@
             }
 
             function playOrPause(audio, btn) {
-                // Жест пользователя — разблокируем звук
                 unlockAudio();
 
                 if (audio.paused) {
                     resetOtherAudio(audio);
-                    // iOS иногда требует load() перед первым play()
                     if (audio.readyState === 0) audio.load();
-                    const playPromise = audio.play();
-                    if (playPromise && playPromise.then) {
-                        playPromise
-                            .then(() => btn.classList.add('playing'))
-                            .catch(err => {
-                                console.warn('Не удалось воспроизвести:', err);
-                                btn.classList.remove('playing');
-                            });
+                    const p = audio.play();
+                    if (p && p.then) {
+                        p.then(() => btn.classList.add('playing'))
+                         .catch(err => {
+                             console.warn('Не удалось воспроизвести:', err);
+                             btn.classList.remove('playing');
+                         });
                     } else {
                         btn.classList.add('playing');
                     }
@@ -173,26 +176,13 @@
                 }
             }
 
-            // Обработчики: и click, и touchend — чтобы iOS точно поймал жест
-            function bindButton(btn, audio) {
-                let touched = false;
+            // Только click — надёжно работает на iOS для <button>
+            btn1.addEventListener('click', () => playOrPause(audio1, btn1));
+            btn2.addEventListener('click', () => playOrPause(audio2, btn2));
 
-                btn.addEventListener('touchend', (e) => {
-                    e.preventDefault();
-                    touched = true;
-                    playOrPause(audio, btn);
-                    setTimeout(() => { touched = false; }, 400);
-                }, { passive: false });
-
-                btn.addEventListener('click', (e) => {
-                    // Если touchend уже обработал — не дублируем
-                    if (touched) return;
-                    playOrPause(audio, btn);
-                });
-            }
-
-            bindButton(btn1, audio1);
-            bindButton(btn2, audio2);
+            // Разблокировка отдельно, без переключения play/pause
+            btn1.addEventListener('touchend', unlockAudio, { passive: true });
+            btn2.addEventListener('touchend', unlockAudio, { passive: true });
 
             // Сброс состояния кнопок
             [audio1, audio2].forEach((audio, i) => {
@@ -203,8 +193,8 @@
                         btn.classList.remove('playing');
                     }
                 });
-                audio.addEventListener('error', (e) => {
-                    console.error('Ошибка загрузки аудио ' + (i + 1) + ':', audio.error);
+                audio.addEventListener('error', () => {
+                    console.error('Ошибка загрузки аудио ' + (i + 1), audio.error);
                     btn.classList.remove('playing');
                 });
             });
