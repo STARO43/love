@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Центральный контейнер с кнопками */
+        .controls {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 32px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Минималистичная кнопка воспроизведения */
+        .audio-btn {
+            pointer-events: auto;
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            outline: none;
+        }
+
+        .audio-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.03);
+        }
+
+        .audio-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Иконка внутри кнопки */
+        .audio-btn .icon {
+            font-size: 32px;
+            line-height: 1;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+
+        .audio-btn .label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Состояние "играет" */
+        .audio-btn.playing {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .audio-btn.playing .label {
+            opacity: 1;
+        }
+
+        /* Индикатор воспроизведения (пульсирующая точка) */
+        .audio-btn .dot {
+            position: absolute;
+            bottom: 28px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #fff;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .audio-btn.playing .dot {
+            opacity: 1;
+            animation: dotPulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.4); }
+        }
+
+        /* Кнопка отключения анимации */
+        .toggle-animation {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            padding: 12px 24px;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: rgba(255, 255, 255, 0.6);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .toggle-animation:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.95);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .toggle-animation.off {
+            color: rgba(255, 120, 120, 0.8);
+            border-color: rgba(255, 120, 120, 0.2);
+        }
+
+        .toggle-animation.off:hover {
+            color: rgba(255, 150, 150, 1);
+            border-color: rgba(255, 120, 120, 0.4);
+        }
+
+        /* Адаптивность */
+        @media (max-width: 600px) {
+            .audio-btn {
+                width: 120px;
+                height: 120px;
+            }
+            .audio-btn .icon {
+                font-size: 24px;
+            }
+            .controls {
+                gap: 20px;
+            }
+            .toggle-animation {
+                bottom: 24px;
+                font-size: 10px;
+                padding: 10px 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <div class="controls">
+        <button class="audio-btn" id="btn1">
+            <span class="icon">▶</span>
+            <span class="label">Track 1</span>
+            <span class="dot"></span>
+        </button>
+        <button class="audio-btn" id="btn2">
+            <span class="icon">▶</span>
+            <span class="label">Track 2</span>
+            <span class="dot"></span>
+        </button>
+    </div>
+
+    <button class="toggle-animation" id="toggleAnim">Отключить анимацию</button>
+
+    <audio id="audio1" src="https://raw.githubusercontent.com/STARO43/love/main/1.mp3" preload="auto"></audio>
+    <audio id="audio2" src="https://raw.githubusercontent.com/STARO43/love/main/2.mp3" preload="auto"></audio>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // ============================================
+        // АУДИО ЛОГИКА
+        // ============================================
+        const audio1 = document.getElementById('audio1');
+        const audio2 = document.getElementById('audio2');
+        const btn1 = document.getElementById('btn1');
+        const btn2 = document.getElementById('btn2');
+
+        function resetOtherAudio(except) {
+            [audio1, audio2].forEach(audio => {
+                if (audio !== except) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            });
+            [btn1, btn2].forEach(btn => {
+                if (btn !== (except === audio1 ? btn1 : btn2)) {
+                    btn.classList.remove('playing');
+                }
+            });
+        }
+
+        function toggleAudio(audio, btn) {
+            if (audio.paused) {
+                resetOtherAudio(audio);
+                audio.play().catch(err => console.warn('Ошибка воспроизведения:', err));
+                btn.classList.add('playing');
+            } else {
+                audio.pause();
+                btn.classList.remove('playing');
+            }
+        }
+
+        btn1.addEventListener('click', () => toggleAudio(audio1, btn1));
+        btn2.addEventListener('click', () => toggleAudio(audio2, btn2));
+
+        // Сброс состояния кнопок при окончании/паузе
+        [audio1, audio2].forEach((audio, i) => {
+            const btn = i === 0 ? btn1 : btn2;
+            audio.addEventListener('ended', () => btn.classList.remove('playing'));
+            audio.addEventListener('pause', () => {
+                if (audio.currentTime === 0 || audio.ended) {
+                    btn.classList.remove('playing');
+                }
+            });
+        });
+
+        // ============================================
+        // THREE.JS — МИНИМАЛИСТИЧНАЯ АНИМАЦИЯ
+        // ============================================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+        scene.fog = new THREE.Fog(0x0a0a0a, 10, 25);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 12);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Освещение — мягкое, без резких теней
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        keyLight.position.set(5, 5, 5);
+        scene.add(keyLight);
+
+        const accentLight1 = new THREE.PointLight(0xffffff, 1.5, 20);
+        accentLight1.position.set(-4, 0, 3);
+        scene.add(accentLight1);
+
+        const accentLight2 = new THREE.PointLight(0xffffff, 1.5, 20);
+        accentLight2.position.set(4, 0, 3);
+        scene.add(accentLight2);
+
+        // Группа для всех объектов
+        const world = new THREE.Group();
+        scene.add(world);
+
+        // --- Центральный тор (главный объект) ---
+        const torusGeo = new THREE.TorusGeometry(1.8, 0.04, 16, 120);
+        const torusMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0x333333,
+            roughness: 0.3,
+            metalness: 0.8,
+            transparent: true,
+            opacity: 0.9
+        });
+        const torus = new THREE.Mesh(torusGeo, torusMat);
+        torus.rotation.x = Math.PI / 2.5;
+        world.add(torus);
+
+        // --- Второй тор поменьше ---
+        const torus2Geo = new THREE.TorusGeometry(1.4, 0.02, 16, 100);
+        const torus2Mat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0x222222,
+            roughness: 0.4,
+            metalness: 0.6,
+            transparent: true,
+            opacity: 0.5
+        });
+        const torus2 = new THREE.Mesh(torus2Geo, torus2Mat);
+        torus2.rotation.x = Math.PI / 3;
+        torus2.rotation.y = 0.5;
+        world.add(torus2);
+
+        // --- Орбита из маленьких сфер ---
+        const orbitGroup = new THREE.Group();
+        const sphereGeo = new THREE.SphereGeometry(0.06, 12, 12);
+        const sphereMat = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            emissive: 0x666666,
+            roughness: 0.2,
+            metalness: 0.9
+        });
+
+        const orbitCount = 16;
+        for (let i = 0; i < orbitCount; i++) {
+            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            const angle = (i / orbitCount) * Math.PI * 2;
+            sphere.position.set(Math.cos(angle) * 2.6, 0, Math.sin(angle) * 2.6);
+            sphere.userData = { angle, radius: 2.6 };
+            orbitGroup.add(sphere);
+        }
+        orbitGroup.rotation.x = Math.PI / 2.8;
+        world.add(orbitGroup);
+
+        // --- Медленно плывущие частицы на фоне ---
+        const particleCount = 200;
+        const particleGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 40;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 25;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 20 - 5;
+            velocities.push({
+                x: (Math.random() - 0.5) * 0.005,
+                y: (Math.random() - 0.5) * 0.005,
+                z: (Math.random() - 0.5) * 0.005
+            });
+        }
+
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+        const particleMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.4,
+            sizeAttenuation: true
+        });
+
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // --- Внутреннее свечение (маленькая яркая сфера в центре) ---
+        const coreGeo = new THREE.SphereGeometry(0.15, 16, 16);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        world.add(core);
+
+        // ============================================
+        // АНИМАЦИЯ
+        // ============================================
+        let time = 0;
+        let animationEnabled = true;
+        let animationFrameId = null;
+
+        const toggleBtn = document.getElementById('toggleAnim');
+
+        toggleBtn.addEventListener('click', () => {
+            animationEnabled = !animationEnabled;
+            if (animationEnabled) {
+                toggleBtn.textContent = 'Отключить анимацию';
+                toggleBtn.classList.remove('off');
+                if (!animationFrameId) animate();
+            } else {
+                toggleBtn.textContent = 'Включить анимацию';
+                toggleBtn.classList.add('off');
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+            }
+        });
+
+        function animate() {
+            if (!animationEnabled) return;
+            animationFrameId = requestAnimationFrame(animate);
+
+            time += 0.008;
+
+            // Вращение торов
+            torus.rotation.z += 0.003;
+            torus.rotation.y += 0.0015;
+
+            torus2.rotation.z -= 0.002;
+            torus2.rotation.y += 0.002;
+
+            // Пульсация центрального тора
+            const pulse = 1 + Math.sin(time * 2) * 0.03;
+            torus.scale.setScalar(pulse);
+
+            // Вращение орбиты + пульсация сфер
+            orbitGroup.rotation.y += 0.004;
+            orbitGroup.rotation.z += 0.001;
+            orbitGroup.children.forEach((sphere, i) => {
+                const s = 1 + Math.sin(time * 3 + i) * 0.3;
+                sphere.scale.setScalar(s);
+            });
+
+            // Пульсация ядра
+            core.scale.setScalar(1 + Math.sin(time * 4) * 0.5);
+            core.material.color.setHSL(0, 0, 0.7 + Math.sin(time * 4) * 0.3);
+
+            // Движение частиц
+            const positions = particles.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                positions[i * 3] += velocities[i].x;
+                positions[i * 3 + 1] += velocities[i].y;
+                positions[i * 3 + 2] += velocities[i].z;
+
+                // Сброс при выходе за границы
+                if (Math.abs(positions[i * 3]) > 20) velocities[i].x *= -1;
+                if (Math.abs(positions[i * 3 + 1]) > 12) velocities[i].y *= -1;
+                if (Math.abs(positions[i * 3 + 2] + 5) > 10) velocities[i].z *= -1;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // Лёгкое движение камеры
+            camera.position.x = Math.sin(time * 0.3) * 0.5;
+            camera.position.y = Math.cos(time * 0.25) * 0.3;
+            camera.lookAt(0, 0, 0);
+
+            // Медленная смена цвета источников света (очень тонкая)
+            accentLight1.color.setHSL(0.6 + Math.sin(time * 0.2) * 0.1, 0.3, 0.7);
+            accentLight2.color.setHSL(0.0 + Math.sin(time * 0.2 + 1) * 0.1, 0.3, 0.7);
+
+            renderer.render(scene, camera);
+        }
+
+        // Обработка ресайза
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Старт
+        animate();
+    </script>
+</body>
+</html>
