@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
-<title>/0</title>
+<title>T</title>
 <style>
   :root{
     --bg:#f6f1e7;
@@ -14,7 +14,7 @@
     --line:#e2d9c6;
     --panel:#fbf7ee;
     --accent:#2b2620;
-    --overlay:rgba(43,38,32,.32);
+    --overlay:rgba(43,38,32,.4);
     --shadow:0 20px 44px -20px rgba(60,45,20,.28);
     --view:#2b2620;
   }
@@ -26,7 +26,7 @@
     --line:#2a2620;
     --panel:#1b1813;
     --accent:#d8cfc1;
-    --overlay:rgba(0,0,0,.62);
+    --overlay:rgba(0,0,0,.7);
     --shadow:0 22px 50px -22px rgba(0,0,0,.75);
     --view:#f0eae0;
   }
@@ -39,7 +39,7 @@
       --line:#2a2620;
       --panel:#1b1813;
       --accent:#d8cfc1;
-      --overlay:rgba(0,0,0,.62);
+      --overlay:rgba(0,0,0,.7);
       --shadow:0 22px 50px -22px rgba(0,0,0,.75);
       --view:#f0eae0;
     }
@@ -81,7 +81,7 @@
     z-index:30;
     flex:0 0 auto;
   }
-  .bar-left{
+  .bar-left, .bar-right{
     display:flex; align-items:center; gap:14px;
   }
 
@@ -116,50 +116,49 @@
   .fontwrap .glyph:focus{outline:none}
   .fontwrap .glyph::selection{background:transparent}
 
-.view{
-  appearance:none; border:0;
-  background:var(--muted);
-  color:var(--bg);
-  padding:2px 6px;
-  border-radius:4px;
-  cursor:default;
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:22px; 
-  line-height:1.2;
-  letter-spacing:-.02em;
-  margin-left:10px;
-  -webkit-tap-highlight-color:transparent;
-}
-.view:focus{outline:none}
+  .view{
+    appearance:none; border:0;
+    background:var(--muted);
+    color:var(--bg);
+    padding:2px 6px;
+    border-radius:4px;
+    cursor:default;
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:22px; 
+    line-height:1.2;
+    letter-spacing:-.02em;
+    margin-left:10px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .view:focus{outline:none}
 
- .fontmenu{
-  position:absolute; top:calc(100% + 12px); left:-14px;
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:10px;
-  box-shadow:var(--shadow);
-  padding:6px;
-  display:none;
-  z-index:100;
-  font-family:Georgia,"Times New Roman",serif;
-  white-space:nowrap;
-  width:max-content;
-}
+  .fontmenu{
+    position:absolute; top:calc(100% + 12px); left:-14px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    padding:6px;
+    display:none;
+    z-index:100;
+    font-family:Georgia,"Times New Roman",serif;
+    white-space:nowrap;
+    width:max-content;
+  }
   .fontmenu.open{display:block}
   .fontmenu button{
-  display:flex; align-items:baseline; justify-content:flex-start;
-  width:100%;
-  appearance:none; border:0; background:transparent;
-  color:var(--text); font:inherit; font-size:15px;
-  padding:8px 12px;
-  border-radius:6px;
-  cursor:default;
-  text-align:left;
-  -webkit-tap-highlight-color:transparent;
-}
+    display:flex; align-items:baseline; justify-content:flex-start;
+    width:100%;
+    appearance:none; border:0; background:transparent;
+    color:var(--text); font:inherit; font-size:15px;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:default;
+    text-align:left;
+    -webkit-tap-highlight-color:transparent;
+  }
   .fontmenu button:hover{background:rgba(127,127,127,.12)}
   .fontmenu button.active{color:var(--accent); font-weight:700}
-
 
   .editor{
     width:100%;
@@ -220,7 +219,7 @@
 
   .passrow{
     display:grid;
-    grid-template-columns:60px 1fr 60px;
+    grid-template-columns:60px 1fr auto auto;
     gap:10px; align-items:stretch;
   }
   .passrow .pw{
@@ -239,11 +238,24 @@
     border:1px solid var(--line); background:transparent; color:var(--text);
     border-radius:8px;
     -webkit-tap-highlight-color:transparent;
+    padding: 0 12px;
   }
   .passrow .act:hover{border-color:var(--text)}
   .passrow .act[disabled]{opacity:.4}
   .passrow .act.pack{background:var(--accent); color:var(--bg); border-color:var(--accent)}
   .passrow .act.pack:hover{opacity:.85}
+
+.passrow .act.qr-btn.active {
+  background: var(--muted);
+  color: var(--bg);
+  border-color: var(--muted);
+}
+  .passrow .qr-btn {
+    font-size: 14px;
+    font-weight: 400;
+    padding: 0 10px;
+    letter-spacing: 0;
+  }
 
   .modal-status{
     margin-top:16px; font-size:13px; color:var(--muted); min-height:18px;
@@ -252,16 +264,36 @@
   .modal-status.err{color:#a8442f}
   .modal-status.ok{color:#4a7a3a}
 
-  .lang{
-  appearance:none; border:0; background:transparent;
-  color:var(--muted); font-family:Georgia,"Times New Roman",serif;
-  font-size:22px; line-height:1; letter-spacing:-.02em;
-  padding:0; cursor:default; margin-left:6px;
-  display:inline-flex; align-items:center; justify-content:center;
-  transform: translateY(1px);
-  -webkit-tap-highlight-color:transparent;
-}
-.lang:focus{outline:none}
+  .lang, .dl, .help {
+    appearance:none; border:0; background:transparent;
+    color:var(--muted); font-family:Georgia,"Times New Roman",serif;
+    font-size:22px; line-height:1; padding:0; cursor:default;
+    display:inline-flex; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .lang:focus, .dl:focus, .help:focus{outline:none}
+
+  .toast {
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--panel); color:var(--text); border:1px solid var(--line);
+    padding:12px 20px; border-radius:8px; box-shadow:var(--shadow);
+    font-size:14px; opacity:0; pointer-events:none;
+    transition:opacity .3s ease, transform .3s ease; z-index:100;
+    text-align:center; line-height:1.4; max-width:80%;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+
+  #qrModal {
+    background: var(--overlay); 
+    backdrop-filter: blur(2px);
+  }
+  #qrModal.open { display: flex; }
+  #qrCanvas { 
+    display: block;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2); 
+    border-radius: 8px;
+  }
 </style>
 </head>
 <body>
@@ -276,11 +308,14 @@
       <div class="fontwrap" id="fontwrap">
         <button type="button" class="glyph" id="fontGlyph" aria-label="Шрифт">𝓐𝕒</button>
         <div class="fontmenu" id="fontMenu" role="menu" aria-label="Шрифт"></div>
-          <button class="view" id="view" aria-label="Тема">𝓐𝕒</button>
-           </div>
+        <button class="view" id="view" aria-label="Тема">𝓐𝕒</button>
+      </div>
     </div>
-         <button class="lang" id="lang">𝓔𝓝</button>
-
+    <div class="bar-right">
+        <button class="lang" id="lang">𝓔𝓝</button>
+        <button class="dl" id="download" title="Скачать">⇊</button>
+        <button class="help" id="help" title="Помощь">⍰</button>
+    </div>
   </div>
 
   <textarea class="editor" id="editor" placeholder="Ввод..." spellcheck="false"></textarea>
@@ -292,23 +327,36 @@
 
 <div class="overlay" id="overlay">
   <div class="modal" role="dialog" aria-modal="true">
-    <button class="closex" id="modalClose" aria-label="Закрыть">×</button>
-    <div class="passrow">
-    <button class="act" id="btnUnpack" title="Распаковать">↶</button>
+      <div class="passrow">
+      <button class="act" id="btnUnpack" title="Распаковать">↶</button>
       <input class="pw" id="pw" type="text" maxlength="10" placeholder="••••••••••" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="nope-please-ignore" aria-label="Поле">
+      <button class="act qr-btn" id="btnQr" title="Показать QR">Кьюар</button>
       <button class="act pack" id="btnPack" title="Упаковать">→</button>
     </div>
     <div class="modal-status" id="modalStatus" aria-live="polite"></div>
   </div>
 </div>
 
+<div class="overlay" id="qrModal">
+  <canvas id="qrCanvas"></canvas>
+</div>
+
+<div class="overlay" id="infoModal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <button class="closex" id="infoClose" aria-label="Закрыть">×</button>
+    <p class="info-text" id="infoText" style="text-align:center; font-size:16px; line-height:1.6; margin:0;"></p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
 (() => {
   'use strict';
 
+  // --- Логика шифрования и кодирования ---
   const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   const L = (() => { const m = Object.create(null); for (let i = 0; i < A.length; i++) m[A[i]] = i; return m; })();
-
   const HASH_LIMIT = 24000;
 
   const wf = (v) => {
@@ -497,6 +545,100 @@
     } catch { return null; }
   };
 
+  // --- QR-код (упрощённый) ---
+  const getQRMatrix = (text) => {
+    const len = text.length;
+    let type = 1;
+    for (let i = 1; i <= 40; i++) {
+      const cap = i < 10 ? 150 - i * 4 : 580 - i * 8; 
+      if (len * 8 + 12 < cap) { type = i; break; }
+    }
+    const size = type * 4 + 17;
+    const matrix = Array(size).fill(0).map(() => Array(size).fill(0));
+    const reserved = Array(size).fill(0).map(() => Array(size).fill(false));
+
+    const setFinder = (r, c) => {
+      for (let i = -1; i <= 7; i++) {
+        for (let j = -1; j <= 7; j++) {
+          const rr = r + i, cc = c + j;
+          if (rr >= 0 && rr < size && cc >= 0 && cc < size) {
+            matrix[rr][cc] = (i >= 0 && i <= 6 && (j === 0 || j === 6)) ||
+                             (j >= 0 && j <= 6 && (i === 0 || i === 6)) ||
+                             (i >= 2 && i <= 4 && j >= 2 && j <= 4) ? 1 : 0;
+            reserved[rr][cc] = true;
+          }
+        }
+      }
+    };
+
+    setFinder(0, 0); setFinder(0, size - 7); setFinder(size - 7, 0);
+
+    for (let i = 8; i < size - 8; i++) {
+      matrix[6][i] = i % 2 === 0 ? 1 : 0; reserved[6][i] = true;
+      matrix[i][6] = i % 2 === 0 ? 1 : 0; reserved[i][6] = true;
+    }
+
+    for (let i = 0; i < 9; i++) {
+      if (i !== 6) { reserved[8][i] = true; reserved[i][8] = true; }
+    }
+    for (let i = 0; i < 8; i++) {
+      if (i !== 6) {
+        reserved[8][size - 1 - i] = true;
+        reserved[size - 1 - i][8] = true;
+      }
+    }
+    reserved[8][8] = true;
+
+    for (let i = 9; i < size - 8; i++) reserved[8][i] = true;
+    for (let i = 9; i < size - 8; i++) reserved[i][8] = true;
+
+    const bits = [];
+    bits.push(0, 1, 0, 0);
+    for (let i = 7; i >= 0; i--) bits.push((len >> i) & 1);
+    for (let i = 0; i < len; i++) {
+      const code = text.charCodeAt(i);
+      for (let b = 7; b >= 0; b--) bits.push((code >> b) & 1);
+    }
+    bits.push(0, 0, 0, 0);
+
+    const totalBits = size * size;
+    let remaining = totalBits;
+    reserved.forEach(row => row.forEach(r => { if (r) remaining--; }));
+    
+    while (bits.length % 8 !== 0) bits.push(0);
+    let pad = 0xEC;
+    while (bits.length < remaining) {
+      for (let b = 7; b >= 0; b--) bits.push((pad >> b) & 1);
+      pad = pad === 0xEC ? 0x11 : 0xEC;
+    }
+
+    let dir = -1;
+    let row = size - 1;
+    let col = size - 1;
+    let bitIdx = 0;
+
+    while (col > 0) {
+      if (col === 6) col--;
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < 2; j++) {
+          const c = col - j;
+          if (!reserved[row][c] && bitIdx < bits.length) {
+            matrix[row][c] = bits[bitIdx++];
+          }
+        }
+        row += dir;
+        if (row < 0 || row >= size) {
+          row -= dir;
+          dir = -dir;
+          break;
+        }
+      }
+      col -= 2;
+    }
+    return matrix;
+  };
+
+  // --- DOM ---
   const $ = (id) => document.getElementById(id);
   const root = document.documentElement;
   const editor = $('editor');
@@ -505,11 +647,19 @@
   const modalStatus = $('modalStatus');
   const btnPack = $('btnPack');
   const btnUnpack = $('btnUnpack');
+  const btnQr = $('btnQr');
   const view = $('view');
   const fontwrap = $('fontwrap');
   const fontMenu = $('fontMenu');
   const fontGlyph = $('fontGlyph');
   const langBtn = $('lang');
+  const downloadBtn = $('download');
+  const helpBtn = $('help');
+  const toastEl = $('toast');
+  const qrModal = $('qrModal');
+  const qrCanvas = $('qrCanvas');
+  const infoModal = $('infoModal');
+  const infoText = $('infoText');
 
   const FONTS = [
     { name: 'Временной',        enName: 'Times',         stack: "'Times New Roman', Times, serif" },
@@ -527,18 +677,21 @@
 
   const i18n = {
     ru: {
-      title: 'Скрижа',
+      title: 'Текстиньо',
       placeholder: 'Ввод...',
       packTitle: 'Упаковать',
       unpackTitle: 'Распаковать',
       errEmpty: 'Пусто',
       errLen: '10 символов',
-      errLong: 'Сократите текст',
+      errLong: 'Сократите',
       errFail: 'Нет',
-      errError: 'Ошибка'
+      errError: 'Ошибка',
+      msgSaved: 'Пользуйся офлайн. Усиль, изменив порядок алфавита в коде.',
+      infoText: 'Что это? Приложение для запоминания.',
+      qrBtn: 'Кьюар'
     },
     en: {
-      title: 'Tablet',
+      title: 'Textinho',
       placeholder: 'Input...',
       packTitle: 'Pack',
       unpackTitle: 'Unpack',
@@ -546,7 +699,10 @@
       errLen: '10 characters',
       errLong: 'Shorten text',
       errFail: 'None',
-      errError: 'Error'
+      errError: 'Error',
+      msgSaved: 'Use offline. Enhance by changing the alphabet order in the code.',
+      infoText: 'What is this? An app for memorization.',
+      qrBtn: 'QR'
     }
   };
 
@@ -557,6 +713,7 @@
     editor.placeholder = t.placeholder;
     btnPack.title = t.packTitle;
     btnUnpack.title = t.unpackTitle;
+    btnQr.textContent = t.qrBtn;
     langBtn.textContent = isEN ? '𝓅𝓎' : '𝓁𝓃';
     
     fontMenu.querySelectorAll('button').forEach(b => {
@@ -564,6 +721,7 @@
       if (f) b.textContent = isEN ? f.enName : f.name;
     });
     setModalStatus('');
+    infoText.textContent = t.infoText;
   };
 
   langBtn.addEventListener('click', () => {
@@ -663,7 +821,6 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
   });
-  $('modalClose').addEventListener('click', closeModal);
 
   const lockBtns = (on) => { btnPack.disabled = on; btnUnpack.disabled = on; };
 
@@ -680,12 +837,68 @@
     return s;
   };
 
-  const doPack = async () => {
+   const drawQR = (text) => {
+    try {
+      const matrix = getQRMatrix(text);
+      const count = matrix.length;
+      
+      const displaySize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.8, 600);
+      const cellSize = Math.floor(displaySize / count);
+      const size = count * cellSize;
+
+      qrCanvas.width = size;
+      qrCanvas.height = size;
+      
+      qrCanvas.style.width = size + 'px';
+      qrCanvas.style.height = size + 'px';
+
+      const ctx = qrCanvas.getContext('2d');
+
+      const isDark = currentTheme() === 'dark';
+      const fgColor = isDark ? '#14120f' : '#d8cfc1'; 
+      const bgColor = isDark ? '#d8cfc1' : '#14120f'; 
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = fgColor;
+      
+      for (let row = 0; row < count; row++) {
+        for (let col = 0; col < count; col++) {
+          if (matrix[row][col]) {
+            ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('QR error', e);
+    }
+  };
+
+  const closeQr = () => qrModal.classList.remove('open');
+  qrModal.addEventListener('click', (e) => {
+    if (e.target === qrModal) closeQr();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && qrModal.classList.contains('open')) closeQr();
+  });
+
+   btnQr.addEventListener('click', () => {
+    btnQr.classList.toggle('active');
+  });
+
+  helpBtn.addEventListener('click', () => {
+    infoModal.classList.add('open');
+  });
+  $('infoClose').addEventListener('click', () => infoModal.classList.remove('open'));
+  infoModal.addEventListener('mousedown', (e) => { if (e.target === infoModal) infoModal.classList.remove('open'); });
+
+    const doPack = async () => {
     const text = editor.value;
     const pw = pwInput.value;
     const t = i18n[isEN ? 'en' : 'ru'];
     if (!text) { setModalStatus(t.errEmpty, 'err'); return; }
     if (pw.length !== 10) { setModalStatus(t.errLen, 'err'); return; }
+    
     lockBtns(true);
     setModalStatus('…');
     try {
@@ -695,10 +908,21 @@
         setModalStatus(t.errLong, 'err');
         return;
       }
+    
+      if (btnQr.classList.contains('active')) {
+        const futureUrl = location.origin + location.pathname + '#' + hash;
+        drawQR(futureUrl);
+        qrModal.classList.add('open');
+        btnQr.classList.remove('active'); 
+        closeModal();
+      } else {
+        closeModal();
+      }
+
       editor.value = hash;
       setHash(hash);
       grow();
-      closeModal();
+      
     } catch { setModalStatus(t.errError, 'err'); }
     finally { lockBtns(false); }
   };
@@ -739,6 +963,24 @@
   }
 
   applyLang('ru');
+
+  downloadBtn.addEventListener('click', () => {
+    const html = '<!doctype html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'T.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toastEl.textContent = i18n[isEN ? 'en' : 'ru'].msgSaved;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 4000);
+  });
+
 })();
 </script>
 </body>
